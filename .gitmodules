@@ -1,0 +1,15 @@
+[submodule "thirdparty/hash-library"]
+	path = thirdparty/hash-library
+	url = https://github.com/andywang0607/hash-library.git
+[submodule "thirdparty/restclient-cpp"]
+	path = thirdparty/restclient-cpp
+	url = https://github.com/mrtazz/restclient-cpp.git
+[submodule "thirdparty/websocketpp"]
+	path = thirdparty/websocketpp
+	url = https://github.com/zaphoyd/websocketpp.git
+[submodule "thirdparty/json"]
+	path = thirdparty/json
+	url = https://github.com/nlohmann/json.git
+[submodule "thirdparty/spdlog"]
+	path = thirdparty/spdlog
+	url = git@github.com:gabime/spdlog.git
