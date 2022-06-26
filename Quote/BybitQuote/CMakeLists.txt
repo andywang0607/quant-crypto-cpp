@@ -1,0 +1,12 @@
+add_library(BybitQuote INTERFACE)
+target_sources(BybitQuote
+               INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/BybitSpotQuote.hpp)
+target_include_directories(BybitQuote INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(BybitQuote INTERFACE QuoteData Receiver json spdlog)
+
+install(
+  TARGETS BybitQuote
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION bin)
+
+add_subdirectory(test)

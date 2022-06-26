@@ -11,7 +11,7 @@ class QuoteNode
 {
 public:
     std::unordered_map<std::string, MarketBook> marketBook_;
-    std::unordered_map<std::string, MarketBook> trade_;
+    std::unordered_map<std::string, Trade> trade_;
 };
 
 } // namespace QuantCrypto::Quote

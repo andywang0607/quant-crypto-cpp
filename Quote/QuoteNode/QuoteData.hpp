@@ -26,12 +26,8 @@ struct Header
     long long sourceTime_;
     long long receivedTime_;
 
-    Header(ExchangeT source, QuoteType type, const std::string &symbol)
-        : source_(source)
-        , type_(type)
-        , symbol_(symbol)
-    {
-    }
+    Header() = default;
+    ~Header() = default;
 };
 
 struct Info
@@ -50,12 +46,9 @@ struct Info
 struct MarketBook
 {
     static constexpr size_t MaxDepth = 40;
-    explicit MarketBook(const ExchangeT source, const std::string &symbol)
-        : header_(source, QuoteType::MarketBook, symbol)
-        , bidDepth_(0)
-        , askDepth_(0)
-    {
-    }
+
+    MarketBook() = default;
+    ~MarketBook() = default;
 
     void pushBid(const double price, const double qty)
     {
@@ -79,6 +72,18 @@ struct MarketBook
         ask.price_ = price;
         ask.qty_ = qty;
         askDepth_++;
+    }
+
+    void clear()
+    {
+        const int depth = bidDepth_ > askDepth_ ? bidDepth_ : askDepth_;
+        for (int i = 0; i < depth; ++i) {
+            bids_[i] = Info(0, 0);
+            asks_[i] = Info(0, 0);
+        }
+
+        bidDepth_ = 0;
+        askDepth_ = 0;
     }
 
     Info &ask(int index = 0)
@@ -107,10 +112,8 @@ enum class TradeType : char
 
 struct Trade
 {
-    explicit Trade(const ExchangeT source, const std::string &symbol)
-        : header_(source, QuoteType::Trade, symbol)
-    {
-    }
+    Trade() = default;
+    ~Trade() = default;
 
     Header header_;
 
