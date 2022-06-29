@@ -83,7 +83,7 @@ private:
     inline T &handleHeader(const nlohmann::json &json)
     {
         const std::string &symbol = json["params"]["symbol"].get<std::string>();
-        T &quote = [this, &symbol]() -> T& {
+        T &quote = [this, &symbol]() -> T & {
             if constexpr (std::is_same_v<T, Trade>) {
                 return trade_[symbol];
             }
@@ -119,7 +119,11 @@ private:
         trade.tradeId_ = json["data"]["v"].get<std::string>();
         trade.tradeType_ = json["data"]["m"].get<bool>() ? TradeType::Buyer : TradeType::Seller;
         trade.price_ = std::stod(json["data"]["p"].get<std::string>());
+<<<<<<< HEAD
         trade.qty_ = std::stod(json["data"]["q"].get<std::string>());
+=======
+        trade.price_ = std::stod(json["data"]["q"].get<std::string>());
+>>>>>>> 2e48c52... [feat] Print Quote data
 
         spdlog::info("[Trade] {}", trade.dump());
     }
@@ -142,6 +146,8 @@ private:
         for (const auto &ask : askArr) {
             book.pushAsk(std::stod(ask[0].get<std::string>()), std::stod(ask[1].get<std::string>()));
         }
+
+        spdlog::info("[Book] {}", book.dump());
     }
 
     nlohmann::json config_;

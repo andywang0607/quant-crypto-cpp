@@ -5,6 +5,8 @@
 #include <string>
 #include <typeinfo>
 
+#include <spdlog/fmt/fmt.h>
+
 namespace QuantCrypto::Quote {
 
 enum class QuoteType : char
@@ -28,6 +30,12 @@ struct Header
 
     Header() = default;
     ~Header() = default;
+
+    inline std::string dump()
+    {
+        return fmt::format("source={}, type={}, symbol={}, sourceTime={}, receivedTime={}",
+                           source_, type_, symbol_, sourceTime_, receivedTime_);
+    }
 };
 
 struct Info
@@ -37,6 +45,12 @@ struct Info
         : price_(price)
         , qty_(qty)
     {
+    }
+
+    inline std::string dump()
+    {
+        return fmt::format("({}, {})",
+                           price_, qty_);
     }
 
     double price_;
@@ -96,6 +110,14 @@ struct MarketBook
         return bids_[index];
     }
 
+    inline std::string dump()
+    {
+        return fmt::format("header={}, bidDepth={}, askDepth={}, bid={}, {}, {}, {}, {}, ask={}, {}, {}, {}, {}",
+                           header_.dump(), bidDepth_, askDepth_, 
+                           bids_[0].dump(), bids_[1].dump(), bids_[2].dump(), bids_[3].dump(), bids_[4].dump(),
+                           asks_[0].dump(), asks_[1].dump(), asks_[2].dump(), asks_[3].dump(), asks_[4].dump());
+    }
+
     Header header_;
 
     int bidDepth_;
@@ -121,6 +143,12 @@ struct Trade
     TradeType tradeType_;
     double price_;
     double qty_;
+
+    inline std::string dump()
+    {
+        return fmt::format("header={}, tradeId_={}, tradeType_={}, price_={}, qty_={}",
+                           header_.dump(), tradeId_, tradeType_, price_, qty_);
+    }
 };
 
 } // namespace QuantCrypto::Quote

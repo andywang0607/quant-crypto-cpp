@@ -96,7 +96,6 @@ private:
         }
 
         handler_.onMessage(msg->get_payload());
-        spdlog::info("[WebSocketReceiver] onMessage text: {}", msg->get_payload());
     }
 
     void onClose(websocketpp::connection_hdl)
