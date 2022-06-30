@@ -14,6 +14,7 @@ int main()
     bybitConfig["enabled"] = true;
     bybitConfig["symbol"].push_back("BTCUSDT");
     bybitConfig["symbol"].push_back("ETHUSDT");
+    bybitConfig["klineType"] = nlohmann::json::array({"1m", "1h"});
     config["exchange"]["bybit"] = bybitConfig;
 
     BybitSpotQuoteAdapter bybit(config);

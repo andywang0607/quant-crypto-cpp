@@ -59,6 +59,19 @@ public:
             ret.emplace_back(bookReq);
         }
 
+        const auto &klineType = config_["exchange"]["bybit"]["klineType"];
+        for (const auto &symbol : symbols) {
+            for (const auto &type : klineType) {
+                static nlohmann::json klineReq;
+
+                klineReq["topic"] = "kline";
+                klineReq["event"] = "sub";
+                klineReq["params"] = {{"binary", false}, {"symbol", symbol}, {"klineType", type}};
+
+                ret.emplace_back(klineReq);
+            }
+        }
+
         return ret;
     }
 
@@ -76,6 +89,11 @@ public:
             handleBook(jsonMsg);
             return;
         }
+
+        if (topic == "kline") {
+            handleKline(jsonMsg);
+            return;
+        }
     }
 
 private:
@@ -90,6 +108,9 @@ private:
             if constexpr (std::is_same_v<T, MarketBook>) {
                 return marketBook_[symbol];
             }
+            if constexpr (std::is_same_v<T, Kline>) {
+                return kline_[symbol];
+            }
         }();
 
         quote.header_.source_ = ExchangeT::ByBit;
@@ -99,6 +120,9 @@ private:
             }
             if constexpr (std::is_same_v<T, MarketBook>) {
                 return QuoteType::MarketBook;
+            }
+            if constexpr (std::is_same_v<T, Kline>) {
+                return QuoteType::Kline;
             }
         }();
         quote.header_.symbol_ = symbol;
@@ -119,11 +143,7 @@ private:
         trade.tradeId_ = json["data"]["v"].get<std::string>();
         trade.tradeType_ = json["data"]["m"].get<bool>() ? TradeType::Buyer : TradeType::Seller;
         trade.price_ = std::stod(json["data"]["p"].get<std::string>());
-<<<<<<< HEAD
         trade.qty_ = std::stod(json["data"]["q"].get<std::string>());
-=======
-        trade.price_ = std::stod(json["data"]["q"].get<std::string>());
->>>>>>> 2e48c52... [feat] Print Quote data
 
         spdlog::info("[Trade] {}", trade.dump());
     }
@@ -148,6 +168,24 @@ private:
         }
 
         spdlog::info("[Book] {}", book.dump());
+    }
+
+    inline void handleKline(const nlohmann::json &json)
+    {
+        if (!json.contains("data")) {
+            return;
+        }
+
+        auto &kline = handleHeader<Kline>(json);
+
+        kline.type_ = json["params"]["klineType"].get<std::string>();
+        kline.highest_ = std::stod(json["data"]["h"].get<std::string>());
+        kline.lowest_ = std::stod(json["data"]["l"].get<std::string>());
+        kline.closed_ = std::stod(json["data"]["c"].get<std::string>());
+        kline.opened_ = std::stod(json["data"]["o"].get<std::string>());
+        kline.volume_ = std::stod(json["data"]["v"].get<std::string>());
+
+        spdlog::info("[Kline] {}", kline.dump());
     }
 
     nlohmann::json config_;

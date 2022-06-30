@@ -12,7 +12,8 @@ namespace QuantCrypto::Quote {
 enum class QuoteType : char
 {
     MarketBook = '1',
-    Trade = '2'
+    Trade = '2',
+    Kline = '3',
 };
 
 enum class ExchangeT : int8_t
@@ -148,6 +149,28 @@ struct Trade
     {
         return fmt::format("header={}, tradeId_={}, tradeType_={}, price_={}, qty_={}",
                            header_.dump(), tradeId_, tradeType_, price_, qty_);
+    }
+};
+
+struct Kline
+{
+    Kline() = default;
+    ~Kline() = default;
+
+    Header header_;
+
+    std::string type_;
+
+    double highest_;
+    double lowest_;
+    double closed_;
+    double opened_;
+    double volume_;
+
+    inline std::string dump()
+    {
+        return fmt::format("header={}, type={}, highest={}, lowest={}, closed={}, opened={}, volume={}",
+                           header_.dump(), type_, highest_, lowest_, closed_, opened_, volume_);
     }
 };
 
