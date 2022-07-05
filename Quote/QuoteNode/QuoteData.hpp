@@ -214,12 +214,22 @@ struct InstrumentInfo
     inline std::string dump()
     {
         return fmt::format(
-            "header={},\
-            lastPrice_={}, prevPrice24h_={}, price24hPcnt_={}, highestPrice24h_={}, lowestPrice24h_={}, prevPrice1h_={}, price1hPcnt_={},\
-            markPrice_ = {}, indexPrice_ = {}, openInterest_ = {}, totalTurnover_ = {}, totalVolume_ = {}, turnover24h_ = {}, volume24h_ = {}, fundingRate_ = {}, predictFundingRate_ = {}, nextFundingTime_ = {}, fundingRateInterval_ = {}, bestBidPrice_ = {}, bestAskPrice_ = {}, lastTickDirection_ = {}",
+            "header={},"
+            "lastPrice_={}, prevPrice24h_={}, price24hPcnt_={}, highestPrice24h_={}, lowestPrice24h_={},"
+            "prevPrice1h_={}, price1hPcnt_={},"
+            "markPrice_ = {}, indexPrice_ = {},"
+            "openInterest_ = {}, totalTurnover_ = {}, totalVolume_ = {},"
+            "turnover24h_ = {}, volume24h_ = {},"
+            "fundingRate_ = {}, predictFundingRate_ = {}, nextFundingTime_ = {}, fundingRateInterval_ = {},"
+            "bestBidPrice_ = {}, bestAskPrice_ = {}, lastTickDirection_ = {}",
             header_.dump(),
-            lastPrice_, prevPrice24h_, price24hPcnt_, highestPrice24h_, lowestPrice24h_, prevPrice1h_, price1hPcnt_,
-            markPrice_, indexPrice_, openInterest_, totalTurnover_, totalVolume_, turnover24h_, volume24h_, fundingRate_, predictFundingRate_, nextFundingTime_, fundingRateInterval_, bestBidPrice_, bestAskPrice_, lastTickDirection_);
+            lastPrice_, prevPrice24h_, price24hPcnt_, highestPrice24h_, lowestPrice24h_,
+            prevPrice1h_, price1hPcnt_,
+            markPrice_, indexPrice_,
+            openInterest_, totalTurnover_, totalVolume_,
+            turnover24h_, volume24h_,
+            fundingRate_, predictFundingRate_, nextFundingTime_, fundingRateInterval_,
+            bestBidPrice_, bestAskPrice_, lastTickDirection_);
     }
 };
 
