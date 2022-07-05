@@ -2,7 +2,11 @@
 #define __TIMEUTILS_H__
 
 #include <chrono>
+#include <iomanip>
+#include <sstream>
 #include <string>
+
+#include "boost/date_time/posix_time/posix_time.hpp"
 
 namespace Util::Time {
 
@@ -15,18 +19,23 @@ inline long long getTime()
         .count();
 }
 
-inline long long toTimestamp(const std::string &dateTime)
+/**
+* \brief convert ISO 8601 date time string to timestamp 
+* \param[in] ISO 8601 datetime string, ex: 2020-03-30T02:21:06.000Z
+* \return timestamp
+*/
+inline long long toTimestamp(std::string &dateTime)
 {
-    std::tm t{};
-    std::istringstream ss(dateTime);
+    using namespace boost::posix_time;
+    static const std::string EpochStr = "19700101T000000.000";
+    static const boost::posix_time::ptime Epoch(from_iso_string(EpochStr));
 
-    ss >> std::get_time(&t, "%Y-%m-%dT%H:%M:%S");
-    if (ss.fail()) {
-        throw std::runtime_error{"failed to parse time string"};
+    if (auto index = dateTime.rfind("Z"); index != std::string::npos) {
+        dateTime.erase(dateTime.begin() + index);
     }
-    std::time_t time_stamp = mktime(&t);
 
-    return time_stamp;
+    boost::posix_time::ptime t(from_iso_extended_string(dateTime));
+    return (t - Epoch).total_milliseconds();
 }
 } // namespace Util::Time
 

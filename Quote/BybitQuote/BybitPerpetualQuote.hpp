@@ -117,7 +117,7 @@ private:
         instrumentInfo.header_.type_ = QuoteType::InstrumentInfo;
         instrumentInfo.header_.symbol_ = symbol;
         instrumentInfo.header_.receivedTime_ = getTime();
-        instrumentInfo.header_.sourceTime_ = std::stoll(json["timestamp_e6"].get<std::string>());
+        instrumentInfo.header_.sourceTime_ = std::stoll(json["timestamp_e6"].get<std::string>()) / 1000.f;
 
         const auto dataType = json["type"].get<std::string>();
         if (dataType == "snapshot") {
@@ -143,7 +143,10 @@ private:
             instrumentInfo.bestBidPrice_ = std::stod(dataObj["bid1_price"].get<std::string>());
             instrumentInfo.bestAskPrice_ = std::stod(dataObj["ask1_price"].get<std::string>());
             instrumentInfo.lastTickDirection_ = dataObj["last_tick_direction"].get<std::string>();
-            instrumentInfo.nextFundingTime_ = toTimestamp(dataObj["next_funding_time"].get<std::string>());
+            instrumentInfo.nextFundingTime_ = [&dataObj](){
+                auto dateTimeStr = dataObj["next_funding_time"].get<std::string>();
+                return toTimestamp(dateTimeStr);
+            }();
         } else if (dataType == "delta") {
             const auto &dataObj = json["data"]["update"][0];
 
@@ -167,7 +170,11 @@ private:
             instrumentInfo.bestBidPrice_ = dataObj.contains("bid1_price") ? std::stod(dataObj["bid1_price"].get<std::string>()) : instrumentInfo.bestBidPrice_;
             instrumentInfo.bestAskPrice_ = dataObj.contains("ask1_price") ? std::stod(dataObj["ask1_price"].get<std::string>()) : instrumentInfo.bestAskPrice_;
             instrumentInfo.lastTickDirection_ = dataObj.contains("last_tick_direction") ? dataObj["last_tick_direction"].get<std::string>() : instrumentInfo.lastTickDirection_;
-            instrumentInfo.nextFundingTime_ = dataObj.contains("next_funding_time") ? toTimestamp(dataObj["next_funding_time"].get<std::string>()) : instrumentInfo.nextFundingTime_;
+            instrumentInfo.nextFundingTime_ = dataObj.contains("next_funding_time") ? instrumentInfo.nextFundingTime_ = [&dataObj]() {
+                auto dateTimeStr = dataObj["next_funding_time"].get<std::string>();
+                return toTimestamp(dateTimeStr);
+            }()
+                                                                                    : instrumentInfo.nextFundingTime_;
         }
 
         spdlog::info("[InstrumentInfo] {}", instrumentInfo.dump());
