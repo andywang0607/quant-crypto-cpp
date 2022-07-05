@@ -4,6 +4,7 @@
 #include "QuoteData.hpp"
 #include "QuoteNode.hpp"
 #include "WebSocketReceiver.hpp"
+#include "TimeUtils.hpp"
 
 #include <chrono>
 #include <cstddef>
@@ -11,6 +12,8 @@
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
+
+using namespace Util::Time;
 
 namespace QuantCrypto::Quote {
 
@@ -168,20 +171,6 @@ private:
         }
 
         spdlog::info("[InstrumentInfo] {}", instrumentInfo.dump());
-    }
-
-    long long toTimestamp(const std::string &dateTime)
-    {
-        std::tm t{};
-        std::istringstream ss(dateTime);
-
-        ss >> std::get_time(&t, "%Y-%m-%dT%H:%M:%S");
-        if (ss.fail()) {
-            throw std::runtime_error{"failed to parse time string"};
-        }
-        std::time_t time_stamp = mktime(&t);
-
-        return time_stamp;
     }
 
     nlohmann::json config_;

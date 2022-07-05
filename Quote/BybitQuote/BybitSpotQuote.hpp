@@ -4,12 +4,15 @@
 #include "QuoteData.hpp"
 #include "QuoteNode.hpp"
 #include "WebSocketReceiver.hpp"
+#include "TimeUtils.hpp"
 
 #include <cstddef>
 #include <string>
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
+
+using namespace Util::Time;
 
 namespace QuantCrypto::Quote {
 
