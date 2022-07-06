@@ -17,3 +17,6 @@ target_include_directories(json
 
 # spdlog
 add_subdirectory(spdlog)
+
+# googletest
+add_subdirectory(googletest)

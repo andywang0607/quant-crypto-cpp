@@ -11,9 +11,10 @@ namespace QuantCrypto::Quote {
 
 enum class QuoteType : char
 {
-    MarketBook = '1',
-    Trade = '2',
-    Kline = '3',
+    MarketBook = 'M',
+    Trade = 'T',
+    Kline = 'K',
+    InstrumentInfo = 'I',
 };
 
 enum class ExchangeT : int8_t
@@ -171,6 +172,64 @@ struct Kline
     {
         return fmt::format("header={}, type={}, highest={}, lowest={}, closed={}, opened={}, volume={}",
                            header_.dump(), type_, highest_, lowest_, closed_, opened_, volume_);
+    }
+};
+
+struct InstrumentInfo
+{
+    InstrumentInfo() = default;
+    ~InstrumentInfo() = default;
+
+    Header header_;
+
+    double lastPrice_;
+    double prevPrice24h_;
+    double price24hPcnt_;
+    double highestPrice24h_;
+    double lowestPrice24h_;
+
+    double prevPrice1h_;
+    double price1hPcnt_;
+    double markPrice_;
+
+    double indexPrice_;
+    double openInterest_;
+    double totalTurnover_;
+    double totalVolume_;
+
+    double turnover24h_;
+    double volume24h_;
+
+    double fundingRate_;
+    double predictFundingRate_;
+
+    long long nextFundingTime_;
+    int fundingRateInterval_;
+
+    double bestBidPrice_;
+    double bestAskPrice_;
+
+    std::string lastTickDirection_;
+
+    inline std::string dump()
+    {
+        return fmt::format(
+            "header={},"
+            "lastPrice_={}, prevPrice24h_={}, price24hPcnt_={}, highestPrice24h_={}, lowestPrice24h_={},"
+            "prevPrice1h_={}, price1hPcnt_={},"
+            "markPrice_ = {}, indexPrice_ = {},"
+            "openInterest_ = {}, totalTurnover_ = {}, totalVolume_ = {},"
+            "turnover24h_ = {}, volume24h_ = {},"
+            "fundingRate_ = {}, predictFundingRate_ = {}, nextFundingTime_ = {}, fundingRateInterval_ = {},"
+            "bestBidPrice_ = {}, bestAskPrice_ = {}, lastTickDirection_ = {}",
+            header_.dump(),
+            lastPrice_, prevPrice24h_, price24hPcnt_, highestPrice24h_, lowestPrice24h_,
+            prevPrice1h_, price1hPcnt_,
+            markPrice_, indexPrice_,
+            openInterest_, totalTurnover_, totalVolume_,
+            turnover24h_, volume24h_,
+            fundingRate_, predictFundingRate_, nextFundingTime_, fundingRateInterval_,
+            bestBidPrice_, bestAskPrice_, lastTickDirection_);
     }
 };
 

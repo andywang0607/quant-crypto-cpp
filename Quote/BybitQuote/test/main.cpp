@@ -1,5 +1,5 @@
 #include "BybitSpotQuote.hpp"
-
+#include "BybitPerpetualQuote.hpp"
 #include <iostream>
 
 #include <nlohmann/json.hpp>
@@ -17,8 +17,11 @@ int main()
     bybitConfig["klineType"] = nlohmann::json::array({"1m", "1h"});
     config["exchange"]["bybit"] = bybitConfig;
 
-    BybitSpotQuoteAdapter bybit(config);
-    bybit.connect();
+    BybitSpotQuoteAdapter bybitSpot(config);
+    bybitSpot.connect();
+
+    BybitPerpetualQuoteAdapter bybitPerpetual(config);
+    bybitPerpetual.connect();
 
     while (true) {
     }

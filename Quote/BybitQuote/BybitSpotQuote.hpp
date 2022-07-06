@@ -4,24 +4,17 @@
 #include "QuoteData.hpp"
 #include "QuoteNode.hpp"
 #include "WebSocketReceiver.hpp"
+#include "TimeUtils.hpp"
 
-#include <chrono>
 #include <cstddef>
 #include <string>
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
+using namespace Util::Time;
+
 namespace QuantCrypto::Quote {
-
-static long long getTime()
-{
-    const auto p1 = std::chrono::system_clock::now();
-
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-               p1.time_since_epoch())
-        .count();
-}
 
 class BybitSpotQuoteHandler : public QuoteNode
 {

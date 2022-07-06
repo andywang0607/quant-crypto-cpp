@@ -7,12 +7,14 @@
 #include <unordered_map>
 
 namespace QuantCrypto::Quote {
+
 class QuoteNode
 {
 public:
     std::unordered_map<std::string, MarketBook> marketBook_;
     std::unordered_map<std::string, Trade> trade_;
     std::unordered_map<std::string, Kline> kline_;
+    std::unordered_map<std::string, InstrumentInfo> instrumentInfo_;
 };
 
 } // namespace QuantCrypto::Quote
