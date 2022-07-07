@@ -1,0 +1,24 @@
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "*"]
+  pull_request:
+    branches: [ "main" ]
+
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  Ubuntu-build:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out repository 
+        uses: actions/checkout@v3
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
+      - name: build docker
+        run: docker build -f ci/docker/Dockerfile -t quant-crypto-cpp .
+      - name: build quant-crypto-cpp
+        run: docker run -v ${{ github.workspace }}:/quant-crypto-cpp/ quant-crypto-cpp /bin/bash -c "/build_project.sh quant-crypto-cpp"
