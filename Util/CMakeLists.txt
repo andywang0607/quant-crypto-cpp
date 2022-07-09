@@ -1,4 +1,4 @@
-set(targets Time)
+set(targets Time Sign)
 
 add_library(Util INTERFACE)
 foreach(target ${targets})
