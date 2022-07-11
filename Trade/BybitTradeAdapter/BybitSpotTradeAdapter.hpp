@@ -29,7 +29,6 @@ public:
     virtual bool createOrder(Order &order) override
     {
         static const std::string Path = "spot/v1/order";
-        static long long sequenceNo = 0;
 
         static std::map<std::string, std::string> params{
             {"api_key", config_["exchange"]["bybit"]["apiKey"].get<std::string>()}};
@@ -62,7 +61,7 @@ public:
             }
             return "IOC";
         }();
-        order.customOrderId_ = std::string("Bybit") + order.symbol_ + std::to_string(sequenceNo++);
+        order.customOrderId_ = genOrderId(order.symbol_);
         params["orderLinkId"] = order.customOrderId_;
 
         const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
@@ -99,6 +98,12 @@ public:
     }
 
 private:
+    inline std::string genOrderId(const std::string &symbol)
+    {
+        static long long sequenceNo = 0;
+        return std::string("Bybit") + Util::Time::getDateTime() + symbol + std::to_string(sequenceNo++);
+    }
+
     static inline std::string URL = "https://api.bybit.com/";
     nlohmann::json config_;
     std::string apiSecret_;
