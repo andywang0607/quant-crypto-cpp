@@ -23,5 +23,8 @@ int main()
 
     ret = bybitTradeAdapter.deleteOrder(mockOrder.customOrderId_);
     std::cout << "deleteOrder test, ret = " << ret << "\n";
+
+    ret = bybitTradeAdapter.queryPosition();
+    std::cout << "queryPosition test, ret = " << ret << "\n";
     return 0;
 }

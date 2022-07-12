@@ -97,6 +97,26 @@ public:
         return true;
     }
 
+    virtual bool queryPosition() override
+    {
+        static const std::string Path = "spot/v1/account";
+        static std::map<std::string, std::string> params{
+            {"api_key", config_["exchange"]["bybit"]["apiKey"].get<std::string>()}};
+
+        params["timestamp"] = std::to_string(Util::Time::getTime());
+
+        const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
+        const auto request = URL + Path + "?" + signQueryString;
+
+        RestClient::Response r = RestClient::get(request);
+        if (r.code != 200) {
+            spdlog::info("[BybitSpotTrade] queryPosition failed, request={} r.code={}, r.body={}", request, r.code, r.body);
+            return false;
+        }
+        
+        return true;
+    }
+
 private:
     inline std::string genOrderId(const std::string &symbol)
     {
