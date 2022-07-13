@@ -1,0 +1,9 @@
+{
+    "exchange": {
+        "bybit" :{
+            "enabled": true,
+            "symbol":[],
+            "klineType": ["1m"]
+        }
+    }
+}
