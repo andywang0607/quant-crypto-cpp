@@ -26,43 +26,43 @@ public:
     {
     }
 
-    virtual bool createOrder(Order &order) override
+    virtual bool createOrder(Order *order) override
     {
         static const std::string Path = "spot/v1/order";
 
         static std::map<std::string, std::string> params{
             {"api_key", config_["exchange"]["bybit"]["apiKey"].get<std::string>()}};
 
-        params["symbol"] = order.symbol_;
-        params["qty"] = std::to_string(order.qty_);
-        params["price"] = std::to_string(order.price_);
+        params["symbol"] = order->symbol_;
+        params["qty"] = std::to_string(order->qty_);
+        params["price"] = std::to_string(order->price_);
         params["timestamp"] = std::to_string(Util::Time::getTime());
-        params["side"] = [&order]() -> std::string {
-            if (order.side_ == Side::Buy) {
+        params["side"] = [order]() -> std::string {
+            if (order->side_ == Side::Buy) {
                 return "BUY";
             }
             return "SELL";
         }();
         params["type"] = [&order]() {
-            if (order.type_ == OrderType::Limit) {
+            if (order->type_ == OrderType::Limit) {
                 return "LIMIT";
             }
-            if (order.type_ == OrderType::Market) {
+            if (order->type_ == OrderType::Market) {
                 return "MARKET";
             }
             return "LIMIT_MAKER";
         }();
-        params["timeInForce"] = [&order]() {
-            if (order.timeInForce_ == TimeinForce::GTC) {
+        params["timeInForce"] = [order]() {
+            if (order->timeInForce_ == TimeinForce::GTC) {
                 return "GTC";
             }
-            if (order.timeInForce_ == TimeinForce::FOK) {
+            if (order->timeInForce_ == TimeinForce::FOK) {
                 return "FOK";
             }
             return "IOC";
         }();
-        order.customOrderId_ = genOrderId(order.symbol_);
-        params["orderLinkId"] = order.customOrderId_;
+        order->customOrderId_ = genOrderId(order->symbol_);
+        params["orderLinkId"] = order->customOrderId_;
 
         const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
         const auto request = URL + Path + "?" + signQueryString;
@@ -76,13 +76,13 @@ public:
         return true;
     }
 
-    virtual bool deleteOrder(const std::string &orderId) override
+    virtual bool deleteOrder(Order *order) override
     {
         static const std::string Path = "spot/v1/order";
         static std::map<std::string, std::string> params{
             {"api_key", config_["exchange"]["bybit"]["apiKey"].get<std::string>()}};
 
-        params["orderLinkId"] = orderId;
+        params["orderLinkId"] = order->customOrderId_;
         params["timestamp"] = std::to_string(Util::Time::getTime());
 
         const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);

@@ -1,4 +1,4 @@
-#include "BybitSpotTradeAdapter.hpp"
+#include "BybitPerpetualTradeAdapter.hpp"
 #include <iostream>
 
 #include <nlohmann/json.hpp>
@@ -13,18 +13,19 @@ int main()
     bybitConfig["exchange"]["bybit"]["apiKey"] = "";
     bybitConfig["exchange"]["bybit"]["apiSecret"] = "";
 
-    auto bybitTradeAdapter = Bybit::BybitSpotTradeAdapter(bybitConfig);
-    auto mockOrder = Order("ETHUSDT", 10, 1, Side::Buy);
+    auto bybitTradeAdapter = Bybit::BybitPerpetualTradeAdapter(bybitConfig);
+    auto mockOrder = PerpetualOrder("BTCUSDT", 21000, 0.001, Side::Buy);
     mockOrder.timeInForce_ = TimeinForce::GTC;
 
-    auto ret = bybitTradeAdapter.createOrder(mockOrder);
+    auto ret = bybitTradeAdapter.createOrder(&mockOrder);
     std::cout << "createOrder test, ret = " << ret << "\n";
     std::cout << "mockOrder.customOrderId_ = " << mockOrder.customOrderId_ << "\n";
 
-    ret = bybitTradeAdapter.deleteOrder(mockOrder.customOrderId_);
-    std::cout << "deleteOrder test, ret = " << ret << "\n";
-
     ret = bybitTradeAdapter.queryPosition();
     std::cout << "queryPosition test, ret = " << ret << "\n";
+
+    ret = bybitTradeAdapter.deleteOrder(&mockOrder);
+    std::cout << "deleteOrder test, ret = " << ret << "\n";
+
     return 0;
 }
