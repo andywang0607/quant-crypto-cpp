@@ -4,6 +4,7 @@
 #include "BybitSignTool.hpp"
 #include "TimeUtils.hpp"
 #include "TradeApi.hpp"
+#include "TradeNode.hpp"
 
 #include <map>
 #include <string>
@@ -17,7 +18,7 @@ using namespace Util::Sign;
 
 namespace QuantCrypto::Trade::Bybit {
 
-class BybitPerpetualTradeAdapter : public QuantCrypto::Trade::TradeApi
+class BybitPerpetualTradeAdapter : public QuantCrypto::Trade::TradeApi, public QuantCrypto::Trade::PerpetualTradeNode
 {
 public:
     BybitPerpetualTradeAdapter(const nlohmann::json &config)
@@ -159,6 +160,24 @@ public:
         if (result["ret_code"].get<int>() != 0 || result["ext_code"].get<std::string>() != "") {
             spdlog::info("[BybitPerpetualTrade] queryWallet failed, request={} r.code={}, r.body={}", request, r.code, r.body);
             return false;
+        }
+
+        for (const auto &[coin, coinObj] : result["result"].items()) {
+            auto &coinPosition = wallet_[coin];
+
+            coinPosition.equity_ = coinObj["equity"].get<double>();
+            coinPosition.availableBalance_ = coinObj["available_balance"].get<double>();
+            coinPosition.usedMargin_ = coinObj["used_margin"].get<double>();
+            coinPosition.orderMargin_ = coinObj["order_margin"].get<double>();
+            coinPosition.positionMargin_ = coinObj["position_margin"].get<double>();
+            coinPosition.occClosingFee_ = coinObj["occ_closing_fee"].get<double>();
+            coinPosition.occFundingFee_ = coinObj["occ_funding_fee"].get<double>();
+            coinPosition.walletBalance_ = coinObj["wallet_balance"].get<double>();
+            coinPosition.realisedPnl_ = coinObj["realised_pnl"].get<double>();
+            coinPosition.unrealisedPnl_ = coinObj["unrealised_pnl"].get<double>();
+            coinPosition.accumulatedPnl_ = coinObj["cum_realised_pnl"].get<double>();
+
+            spdlog::info("coin={}, position={}", coin, coinPosition.dump());
         }
 
         return true;

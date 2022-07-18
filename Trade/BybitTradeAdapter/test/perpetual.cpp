@@ -21,7 +21,7 @@ int main()
     std::cout << "createOrder test, ret = " << ret << "\n";
     std::cout << "mockOrder.customOrderId_ = " << mockOrder.customOrderId_ << "\n";
 
-    ret = bybitTradeAdapter.queryPosition();
+    ret = bybitTradeAdapter.queryWallet();
     std::cout << "queryPosition test, ret = " << ret << "\n";
 
     ret = bybitTradeAdapter.deleteOrder(&mockOrder);

@@ -24,7 +24,7 @@ int main()
     ret = bybitTradeAdapter.deleteOrder(&mockOrder);
     std::cout << "deleteOrder test, ret = " << ret << "\n";
 
-    ret = bybitTradeAdapter.queryPosition();
+    ret = bybitTradeAdapter.queryWallet();
     std::cout << "queryPosition test, ret = " << ret << "\n";
     return 0;
 }

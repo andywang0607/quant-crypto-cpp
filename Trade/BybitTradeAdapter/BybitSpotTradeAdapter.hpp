@@ -4,6 +4,7 @@
 #include "BybitSignTool.hpp"
 #include "TimeUtils.hpp"
 #include "TradeApi.hpp"
+#include "TradeNode.hpp"
 
 #include <map>
 #include <string>
@@ -17,7 +18,7 @@ using namespace Util::Sign;
 
 namespace QuantCrypto::Trade::Bybit {
 
-class BybitSpotTradeAdapter : public QuantCrypto::Trade::TradeApi
+class BybitSpotTradeAdapter : public QuantCrypto::Trade::TradeApi, public QuantCrypto::Trade::SpotTradeNode
 {
 public:
     BybitSpotTradeAdapter(const nlohmann::json &config)
@@ -113,7 +114,19 @@ public:
             spdlog::info("[BybitSpotTrade] queryWallet failed, request={} r.code={}, r.body={}", request, r.code, r.body);
             return false;
         }
-        
+
+        const auto result = nlohmann::json::parse(r.body)["result"]["balances"];
+        for (const auto &coinObj : result) {
+            const std::string coin = coinObj["coin"].get<std::string>();
+            auto &coinPosition = wallet_[coin];
+
+            coinPosition.total_ = std::stod(coinObj["total"].get<std::string>());
+            coinPosition.free_ = std::stod(coinObj["free"].get<std::string>());
+            coinPosition.locked_ = std::stod(coinObj["locked"].get<std::string>());
+
+            spdlog::info("[BybitSpotTrade] coin={}, position={}", coin, coinPosition.dump());
+        }
+
         return true;
     }
 

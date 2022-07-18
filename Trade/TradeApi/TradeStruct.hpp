@@ -4,6 +4,8 @@
 #include <string>
 #include <utility>
 
+#include <spdlog/fmt/fmt.h>
+
 namespace QuantCrypto::Trade {
 
 enum class Side
@@ -86,5 +88,46 @@ struct PerpetualOrder : public Order
     TriggerPriceType stopLossTriggerType_;
     PositionIndex positionIndex_; 
 };
+
+struct SpotPosition
+{
+    SpotPosition() = default;
+    ~SpotPosition() = default;
+
+    double total_;
+    double free_;
+    double locked_;
+
+    inline std::string dump() const
+    {
+        return fmt::format("total={}, free={}, locked={}",
+                           total_, free_, locked_);
+    }
+};
+
+struct PerpetualPosition
+{
+    PerpetualPosition() = default;
+    ~PerpetualPosition() = default;
+
+    double equity_;
+    double availableBalance_;
+    double usedMargin_;
+    double orderMargin_;
+    double positionMargin_;
+    double occClosingFee_;
+    double occFundingFee_;
+    double walletBalance_;
+    double realisedPnl_;
+    double unrealisedPnl_;
+    double accumulatedPnl_;
+
+    inline std::string dump() const
+    {
+        return fmt::format("equity={}, availableBalance={}, usedMargin={}, orderMargin={}, positionMargin={}, occClosingFee={}, occFundingFee={}, walletBalance={}, realisedPnl={}, unrealisedPnl={}, accumulatedPnl={}",
+                           equity_, availableBalance_, usedMargin_, orderMargin_, positionMargin_, occClosingFee_, occFundingFee_, walletBalance_, realisedPnl_, unrealisedPnl_, accumulatedPnl_);
+    }
+};
+
 } // namespace QuantCrypto::Trade
 #endif // __TRADESTRUCT_H__
