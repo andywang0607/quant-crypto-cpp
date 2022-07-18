@@ -138,9 +138,9 @@ public:
         return true;
     }
 
-    virtual bool queryPosition() override
+    virtual bool queryWallet() override
     {
-        static const std::string Path = "private/linear/position/list";
+        static const std::string Path = "v2/private/wallet/balance";
         static std::map<std::string, std::string> params{
             {"api_key", config_["exchange"]["bybit"]["apiKey"].get<std::string>()}};
 
@@ -151,13 +151,13 @@ public:
 
         RestClient::Response r = RestClient::get(request);
         if (r.code != 200) {
-            spdlog::info("[BybitSpotTrade] queryPosition failed, request={} r.code={}, r.body={}", request, r.code, r.body);
+            spdlog::info("[BybitSpotTrade] queryWallet failed, request={} r.code={}, r.body={}", request, r.code, r.body);
             return false;
         }
 
         const auto result = nlohmann::json::parse(r.body);
         if (result["ret_code"].get<int>() != 0 || result["ext_code"].get<std::string>() != "") {
-            spdlog::info("[BybitPerpetualTrade] queryPosition failed, request={} r.code={}, r.body={}", request, r.code, r.body);
+            spdlog::info("[BybitPerpetualTrade] queryWallet failed, request={} r.code={}, r.body={}", request, r.code, r.body);
             return false;
         }
 

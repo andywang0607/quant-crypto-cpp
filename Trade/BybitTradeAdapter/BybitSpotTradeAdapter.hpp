@@ -97,7 +97,7 @@ public:
         return true;
     }
 
-    virtual bool queryPosition() override
+    virtual bool queryWallet() override
     {
         static const std::string Path = "spot/v1/account";
         static std::map<std::string, std::string> params{
@@ -110,7 +110,7 @@ public:
 
         RestClient::Response r = RestClient::get(request);
         if (r.code != 200) {
-            spdlog::info("[BybitSpotTrade] queryPosition failed, request={} r.code={}, r.body={}", request, r.code, r.body);
+            spdlog::info("[BybitSpotTrade] queryWallet failed, request={} r.code={}, r.body={}", request, r.code, r.body);
             return false;
         }
         
