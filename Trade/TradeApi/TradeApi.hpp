@@ -9,7 +9,7 @@ class TradeApi
 {
 public:
     virtual bool createOrder(Order *order) = 0;
-    virtual bool deleteOrder(Order *order) = 0; // CustomOrderId
+    virtual bool deleteOrder(Order *order) = 0;
     virtual bool queryWallet() = 0;
 };
 

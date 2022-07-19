@@ -45,7 +45,7 @@ public:
             }
             return "Sell";
         }();
-        params["order_type"] = [&perPetualOrder]() {
+        params["order_type"] = [perPetualOrder]() {
             if (perPetualOrder->type_ == OrderType::Limit) {
                 return "Limit";
             }
