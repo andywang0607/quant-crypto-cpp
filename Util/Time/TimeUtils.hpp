@@ -19,6 +19,13 @@ inline long long getTime()
         .count();
 }
 
+inline std::string getDateTime()
+{
+    using namespace boost::posix_time;
+    ptime localTime = second_clock::local_time();
+    return to_iso_string(localTime);
+}
+
 /**
 * \brief convert ISO 8601 date time string to timestamp 
 * \param[in] ISO 8601 datetime string, ex: 2020-03-30T02:21:06.000Z
