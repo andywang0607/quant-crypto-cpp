@@ -1,4 +1,4 @@
-set(targets Time Sign)
+set(targets Time Sign Event)
 
 add_library(Util INTERFACE)
 foreach(target ${targets})
