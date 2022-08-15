@@ -60,124 +60,120 @@ public:
         if (!jsonMsg.contains("topic")) {
             return;
         }
+        if (!jsonMsg.contains("data")) {
+            return;
+        }
         const auto &topic = jsonMsg["topic"].get<std::string>();
 
         if (topic.find("trade") != std::string::npos) {
-            handleTrade(jsonMsg);
+            const auto &dataObj = jsonMsg["data"][0];
+            const std::string &symbol = dataObj["symbol"].get<std::string>();
+            forQuoteData<Trade>(symbol, dataObj, [this, symbol](const nlohmann::json &json, auto &quote) {
+                quote.header_.type_ = QuoteType::Trade;
+                updateHeader(quote, json, symbol, [&json]() {
+                    return std::stoll(json["trade_time_ms"].get<std::string>());
+                });
+                updateTrade(quote, json);
+                spdlog::info("[Trade] {}", quote.dump());
+            });
             return;
         }
 
         if (topic.find("instrument_info") != std::string::npos) {
-            handleInstrumentInfo(jsonMsg);
+            const auto symbol = [&jsonMsg]() -> std::string {
+                const auto topic = jsonMsg["topic"].get<std::string>();
+                auto found = topic.find_last_of(".");
+                return topic.substr(found + 1);
+            }();
+            forQuoteData<InstrumentInfo>(symbol, jsonMsg, [this, &symbol](const nlohmann::json &json, auto &quote) {
+                quote.header_.type_ = QuoteType::InstrumentInfo;
+                updateHeader(quote, json, symbol, [&json]() {
+                    return std::stoll(json["timestamp_e6"].get<std::string>()) / 1000.f;
+                });
+                updateInstrumentInfo(quote, json);
+                spdlog::info("[InstrumentInfo] {}", quote.dump());
+            });
             return;
         }
     }
 
 private:
-    inline void handleTrade(const nlohmann::json &json)
+    template <typename QuoteType, typename GetSourceTime>
+    void updateHeader(QuoteType &quote, const nlohmann::json &json, const std::string &symbol, GetSourceTime &&f)
     {
-        if (!json.contains("data")) {
-            return;
-        }
-
-        const auto &dataObj = json["data"][0];
-
-        const std::string &symbol = dataObj["symbol"].get<std::string>();
-        auto &trade = trade_[symbol];
-
-        trade.header_.source_ = ExchangeT::ByBit;
-        trade.header_.type_ = QuoteType::Trade;
-        trade.header_.symbol_ = symbol;
-        trade.header_.receivedTime_ = getTime();
-        trade.header_.sourceTime_ = std::stoll(dataObj["trade_time_ms"].get<std::string>());
-
-        trade.price_ = std::stod(dataObj["price"].get<std::string>());
-        trade.qty_ = dataObj["size"].get<double>();
-        trade.tradeType_ = dataObj["side"].get<std::string>() == "Sell" ? TradeType::Seller : TradeType::Buyer;
-        trade.tradeId_ = dataObj["trade_id"].get<std::string>();
-
-        spdlog::info("[Trade] {}", trade.dump());
+        quote.header_.source_ = ExchangeT::ByBit;
+        quote.header_.symbol_ = symbol;
+        quote.header_.receivedTime_ = getTime();
+        quote.header_.sourceTime_ = std::forward<GetSourceTime>(f)();
     }
 
-    inline void handleInstrumentInfo(const nlohmann::json &json)
+    void updateTrade(Trade &quote, const nlohmann::json &json)
     {
-        if (!json.contains("data")) {
-            return;
-        }
+        quote.price_ = std::stod(json["price"].get<std::string>());
+        quote.qty_ = json["size"].get<double>();
+        quote.tradeType_ = json["side"].get<std::string>() == "Sell" ? TradeType::Seller : TradeType::Buyer;
+        quote.tradeId_ = json["trade_id"].get<std::string>();
+    }
 
-        const auto symbol = [&json]() -> std::string {
-            const auto topic = json["topic"].get<std::string>();
-            auto found = topic.find_last_of(".");
-            return topic.substr(found + 1);
-        }();
-
-        auto &instrumentInfo = instrumentInfo_[symbol];
-
-        instrumentInfo.header_.source_ = ExchangeT::ByBit;
-        instrumentInfo.header_.type_ = QuoteType::InstrumentInfo;
-        instrumentInfo.header_.symbol_ = symbol;
-        instrumentInfo.header_.receivedTime_ = getTime();
-        instrumentInfo.header_.sourceTime_ = std::stoll(json["timestamp_e6"].get<std::string>()) / 1000.f;
-
+    void updateInstrumentInfo(InstrumentInfo &quote, const nlohmann::json &json)
+    {
         const auto dataType = json["type"].get<std::string>();
         if (dataType == "snapshot") {
             const auto &dataObj = json["data"];
 
-            instrumentInfo.lastPrice_ = std::stod(dataObj["last_price"].get<std::string>());
-            instrumentInfo.prevPrice24h_ = std::stod(dataObj["prev_price_24h"].get<std::string>());
-            instrumentInfo.price24hPcnt_ = std::stod(dataObj["price_24h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6);
-            instrumentInfo.highestPrice24h_ = std::stod(dataObj["high_price_24h"].get<std::string>());
-            instrumentInfo.lowestPrice24h_ = std::stod(dataObj["low_price_24h"].get<std::string>());
-            instrumentInfo.prevPrice1h_ = std::stod(dataObj["prev_price_1h"].get<std::string>());
-            instrumentInfo.price1hPcnt_ = std::stod(dataObj["price_1h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6);
-            instrumentInfo.markPrice_ = std::stod(dataObj["mark_price"].get<std::string>());
-            instrumentInfo.indexPrice_ = std::stod(dataObj["index_price"].get<std::string>());
-            instrumentInfo.openInterest_ = std::stod(dataObj["open_interest_e8"].get<std::string>()) / static_cast<double>(1e8);
-            instrumentInfo.totalTurnover_ = std::stod(dataObj["total_turnover_e8"].get<std::string>()) / static_cast<double>(1e8);
-            instrumentInfo.totalVolume_ = std::stod(dataObj["total_volume_e8"].get<std::string>()) / static_cast<double>(1e8);
-            instrumentInfo.turnover24h_ = std::stod(dataObj["turnover_24h_e8"].get<std::string>()) / static_cast<double>(1e8);
-            instrumentInfo.volume24h_ = std::stod(dataObj["volume_24h_e8"].get<std::string>()) / static_cast<double>(1e8);
-            instrumentInfo.fundingRate_ = std::stod(dataObj["funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6);
-            instrumentInfo.predictFundingRate_ = std::stod(dataObj["predicted_funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6);
-            instrumentInfo.fundingRateInterval_ = std::stod(dataObj["funding_rate_interval"].get<std::string>());
-            instrumentInfo.bestBidPrice_ = std::stod(dataObj["bid1_price"].get<std::string>());
-            instrumentInfo.bestAskPrice_ = std::stod(dataObj["ask1_price"].get<std::string>());
-            instrumentInfo.lastTickDirection_ = dataObj["last_tick_direction"].get<std::string>();
-            instrumentInfo.nextFundingTime_ = [&dataObj](){
+            quote.lastPrice_ = std::stod(dataObj["last_price"].get<std::string>());
+            quote.prevPrice24h_ = std::stod(dataObj["prev_price_24h"].get<std::string>());
+            quote.price24hPcnt_ = std::stod(dataObj["price_24h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6);
+            quote.highestPrice24h_ = std::stod(dataObj["high_price_24h"].get<std::string>());
+            quote.lowestPrice24h_ = std::stod(dataObj["low_price_24h"].get<std::string>());
+            quote.prevPrice1h_ = std::stod(dataObj["prev_price_1h"].get<std::string>());
+            quote.price1hPcnt_ = std::stod(dataObj["price_1h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6);
+            quote.markPrice_ = std::stod(dataObj["mark_price"].get<std::string>());
+            quote.indexPrice_ = std::stod(dataObj["index_price"].get<std::string>());
+            quote.openInterest_ = std::stod(dataObj["open_interest_e8"].get<std::string>()) / static_cast<double>(1e8);
+            quote.totalTurnover_ = std::stod(dataObj["total_turnover_e8"].get<std::string>()) / static_cast<double>(1e8);
+            quote.totalVolume_ = std::stod(dataObj["total_volume_e8"].get<std::string>()) / static_cast<double>(1e8);
+            quote.turnover24h_ = std::stod(dataObj["turnover_24h_e8"].get<std::string>()) / static_cast<double>(1e8);
+            quote.volume24h_ = std::stod(dataObj["volume_24h_e8"].get<std::string>()) / static_cast<double>(1e8);
+            quote.fundingRate_ = std::stod(dataObj["funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6);
+            quote.predictFundingRate_ = std::stod(dataObj["predicted_funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6);
+            quote.fundingRateInterval_ = std::stod(dataObj["funding_rate_interval"].get<std::string>());
+            quote.bestBidPrice_ = std::stod(dataObj["bid1_price"].get<std::string>());
+            quote.bestAskPrice_ = std::stod(dataObj["ask1_price"].get<std::string>());
+            quote.lastTickDirection_ = dataObj["last_tick_direction"].get<std::string>();
+            quote.nextFundingTime_ = [&dataObj]() {
                 auto dateTimeStr = dataObj["next_funding_time"].get<std::string>();
                 return toTimestamp(dateTimeStr);
             }();
         } else if (dataType == "delta") {
             const auto &dataObj = json["data"]["update"][0];
 
-            instrumentInfo.lastPrice_ = dataObj.contains("last_price") ? std::stod(dataObj["last_price"].get<std::string>()) : instrumentInfo.lastPrice_;
-            instrumentInfo.prevPrice24h_ = dataObj.contains("prev_price_24h") ? std::stod(dataObj["prev_price_24h"].get<std::string>()) : instrumentInfo.prevPrice24h_;
-            instrumentInfo.price24hPcnt_ = dataObj.contains("price_24h_pcnt_e6") ? std::stod(dataObj["price_24h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6) : instrumentInfo.price24hPcnt_;
-            instrumentInfo.highestPrice24h_ = dataObj.contains("high_price_24h") ? std::stod(dataObj["high_price_24h"].get<std::string>()) : instrumentInfo.highestPrice24h_;
-            instrumentInfo.lowestPrice24h_ = dataObj.contains("low_price_24h") ? std::stod(dataObj["low_price_24h"].get<std::string>()) : instrumentInfo.lowestPrice24h_;
-            instrumentInfo.prevPrice1h_ = dataObj.contains("prev_price_1h") ? std::stod(dataObj["prev_price_1h"].get<std::string>()) : instrumentInfo.prevPrice1h_;
-            instrumentInfo.price1hPcnt_ = dataObj.contains("price_1h_pcnt_e6") ? std::stod(dataObj["price_1h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6) : instrumentInfo.price1hPcnt_;
-            instrumentInfo.markPrice_ = dataObj.contains("mark_price") ? std::stod(dataObj["mark_price"].get<std::string>()) : instrumentInfo.markPrice_;
-            instrumentInfo.indexPrice_ = dataObj.contains("index_price") ? std::stod(dataObj["index_price"].get<std::string>()) : instrumentInfo.indexPrice_;
-            instrumentInfo.openInterest_ = dataObj.contains("open_interest_e8") ? std::stod(dataObj["open_interest_e8"].get<std::string>()) / static_cast<double>(1e8) : instrumentInfo.openInterest_;
-            instrumentInfo.totalTurnover_ = dataObj.contains("total_turnover_e8") ? std::stod(dataObj["total_turnover_e8"].get<std::string>()) / static_cast<double>(1e8) : instrumentInfo.totalTurnover_;
-            instrumentInfo.totalVolume_ = dataObj.contains("total_volume_e8") ? std::stod(dataObj["total_volume_e8"].get<std::string>()) / static_cast<double>(1e8) : instrumentInfo.totalVolume_;
-            instrumentInfo.turnover24h_ = dataObj.contains("turnover_24h_e8") ? std::stod(dataObj["turnover_24h_e8"].get<std::string>()) / static_cast<double>(1e8) : instrumentInfo.turnover24h_;
-            instrumentInfo.volume24h_ = dataObj.contains("volume_24h_e8") ? std::stod(dataObj["volume_24h_e8"].get<std::string>()) / static_cast<double>(1e8) : instrumentInfo.volume24h_;
-            instrumentInfo.fundingRate_ = dataObj.contains("funding_rate_e6") ? std::stod(dataObj["funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6) : instrumentInfo.fundingRate_;
-            instrumentInfo.predictFundingRate_ = dataObj.contains("predicted_funding_rate_e6") ? std::stod(dataObj["predicted_funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6) : instrumentInfo.predictFundingRate_;
-            instrumentInfo.fundingRateInterval_ = dataObj.contains("funding_rate_interval") ? std::stod(dataObj["funding_rate_interval"].get<std::string>()) : instrumentInfo.fundingRateInterval_;
-            instrumentInfo.bestBidPrice_ = dataObj.contains("bid1_price") ? std::stod(dataObj["bid1_price"].get<std::string>()) : instrumentInfo.bestBidPrice_;
-            instrumentInfo.bestAskPrice_ = dataObj.contains("ask1_price") ? std::stod(dataObj["ask1_price"].get<std::string>()) : instrumentInfo.bestAskPrice_;
-            instrumentInfo.lastTickDirection_ = dataObj.contains("last_tick_direction") ? dataObj["last_tick_direction"].get<std::string>() : instrumentInfo.lastTickDirection_;
-            instrumentInfo.nextFundingTime_ = dataObj.contains("next_funding_time") ? instrumentInfo.nextFundingTime_ = [&dataObj]() {
+            quote.lastPrice_ = dataObj.contains("last_price") ? std::stod(dataObj["last_price"].get<std::string>()) : quote.lastPrice_;
+            quote.prevPrice24h_ = dataObj.contains("prev_price_24h") ? std::stod(dataObj["prev_price_24h"].get<std::string>()) : quote.prevPrice24h_;
+            quote.price24hPcnt_ = dataObj.contains("price_24h_pcnt_e6") ? std::stod(dataObj["price_24h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.price24hPcnt_;
+            quote.highestPrice24h_ = dataObj.contains("high_price_24h") ? std::stod(dataObj["high_price_24h"].get<std::string>()) : quote.highestPrice24h_;
+            quote.lowestPrice24h_ = dataObj.contains("low_price_24h") ? std::stod(dataObj["low_price_24h"].get<std::string>()) : quote.lowestPrice24h_;
+            quote.prevPrice1h_ = dataObj.contains("prev_price_1h") ? std::stod(dataObj["prev_price_1h"].get<std::string>()) : quote.prevPrice1h_;
+            quote.price1hPcnt_ = dataObj.contains("price_1h_pcnt_e6") ? std::stod(dataObj["price_1h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.price1hPcnt_;
+            quote.markPrice_ = dataObj.contains("mark_price") ? std::stod(dataObj["mark_price"].get<std::string>()) : quote.markPrice_;
+            quote.indexPrice_ = dataObj.contains("index_price") ? std::stod(dataObj["index_price"].get<std::string>()) : quote.indexPrice_;
+            quote.openInterest_ = dataObj.contains("open_interest_e8") ? std::stod(dataObj["open_interest_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.openInterest_;
+            quote.totalTurnover_ = dataObj.contains("total_turnover_e8") ? std::stod(dataObj["total_turnover_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.totalTurnover_;
+            quote.totalVolume_ = dataObj.contains("total_volume_e8") ? std::stod(dataObj["total_volume_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.totalVolume_;
+            quote.turnover24h_ = dataObj.contains("turnover_24h_e8") ? std::stod(dataObj["turnover_24h_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.turnover24h_;
+            quote.volume24h_ = dataObj.contains("volume_24h_e8") ? std::stod(dataObj["volume_24h_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.volume24h_;
+            quote.fundingRate_ = dataObj.contains("funding_rate_e6") ? std::stod(dataObj["funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.fundingRate_;
+            quote.predictFundingRate_ = dataObj.contains("predicted_funding_rate_e6") ? std::stod(dataObj["predicted_funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.predictFundingRate_;
+            quote.fundingRateInterval_ = dataObj.contains("funding_rate_interval") ? std::stod(dataObj["funding_rate_interval"].get<std::string>()) : quote.fundingRateInterval_;
+            quote.bestBidPrice_ = dataObj.contains("bid1_price") ? std::stod(dataObj["bid1_price"].get<std::string>()) : quote.bestBidPrice_;
+            quote.bestAskPrice_ = dataObj.contains("ask1_price") ? std::stod(dataObj["ask1_price"].get<std::string>()) : quote.bestAskPrice_;
+            quote.lastTickDirection_ = dataObj.contains("last_tick_direction") ? dataObj["last_tick_direction"].get<std::string>() : quote.lastTickDirection_;
+            quote.nextFundingTime_ = dataObj.contains("next_funding_time") ? [&dataObj]() {
                 auto dateTimeStr = dataObj["next_funding_time"].get<std::string>();
                 return toTimestamp(dateTimeStr);
             }()
-                                                                                    : instrumentInfo.nextFundingTime_;
+                                                                           : quote.nextFundingTime_;
         }
-
-        spdlog::info("[InstrumentInfo] {}", instrumentInfo.dump());
     }
 
     nlohmann::json config_;
