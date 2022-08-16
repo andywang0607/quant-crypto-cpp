@@ -99,7 +99,7 @@ public:
 
 private:
     template <typename QuoteType, typename GetSourceTime>
-    void updateHeader(QuoteType &quote, const nlohmann::json &json, const std::string &symbol, GetSourceTime &&f)
+    inline void updateHeader(QuoteType &quote, const nlohmann::json &json, const std::string &symbol, GetSourceTime &&f)
     {
         quote.header_.source_ = ExchangeT::ByBit;
         quote.header_.symbol_ = symbol;
@@ -107,7 +107,7 @@ private:
         quote.header_.sourceTime_ = std::forward<GetSourceTime>(f)();
     }
 
-    void updateTrade(Trade &quote, const nlohmann::json &json)
+    inline void updateTrade(Trade &quote, const nlohmann::json &json)
     {
         quote.price_ = std::stod(json["price"].get<std::string>());
         quote.qty_ = json["size"].get<double>();
@@ -115,7 +115,7 @@ private:
         quote.tradeId_ = json["trade_id"].get<std::string>();
     }
 
-    void updateInstrumentInfo(InstrumentInfo &quote, const nlohmann::json &json)
+    inline void updateInstrumentInfo(InstrumentInfo &quote, const nlohmann::json &json)
     {
         const auto dataType = json["type"].get<std::string>();
         if (dataType == "snapshot") {

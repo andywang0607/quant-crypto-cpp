@@ -111,7 +111,7 @@ public:
 
 private:
     template <typename QuoteType>
-    void updateHeader(QuoteType &quote, const nlohmann::json &json, const std::string &symbol)
+    inline void updateHeader(QuoteType &quote, const nlohmann::json &json, const std::string &symbol)
     {
         quote.header_.source_ = ExchangeT::ByBit;
         quote.header_.symbol_ = symbol;
@@ -119,7 +119,7 @@ private:
         quote.header_.sourceTime_ = json["data"].at("t").get<long long>();
     }
 
-    void updateTrade(Trade &quote, const nlohmann::json &json)
+    inline void updateTrade(Trade &quote, const nlohmann::json &json)
     {
         quote.tradeId_ = json["data"]["v"].get<std::string>();
         quote.tradeType_ = json["data"]["m"].get<bool>() ? TradeType::Buyer : TradeType::Seller;
@@ -127,7 +127,7 @@ private:
         quote.qty_ = std::stod(json["data"]["q"].get<std::string>());
     }
 
-    void updateBook(MarketBook &quote, const nlohmann::json &json)
+    inline void updateBook(MarketBook &quote, const nlohmann::json &json)
     {
         const auto &bidArr = json["data"]["b"];
         for (const auto &bid : bidArr) {
@@ -140,7 +140,7 @@ private:
         }
     }
 
-    void updateKline(Kline &quote, const nlohmann::json &json)
+    inline void updateKline(Kline &quote, const nlohmann::json &json)
     {
         quote.type_ = json["params"]["klineType"].get<std::string>();
         quote.highest_ = std::stod(json["data"]["h"].get<std::string>());
