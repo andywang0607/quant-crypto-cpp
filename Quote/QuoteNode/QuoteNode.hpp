@@ -20,44 +20,28 @@ public:
     void forQuoteData(const std::string &symbol, const MessageType &msg, F &&f)
     {
         if constexpr (std::is_same_v<QuoteType, MarketBook>) {
-            auto result = marketBook_.find(symbol);
-            if (result != marketBook_.end()) {
-                std::forward<F>(f)(msg, result->second);
-            } else {
-                result = marketBook_.emplace(std::piecewise_construct, std::forward_as_tuple(symbol), std::forward_as_tuple()).first;
-                std::forward<F>(f)(msg, result->second);
-            }
-            QuoteApi::subscribeBook(result->second);
+            auto iter = marketBook_.try_emplace(symbol).first;
+            std::forward<F>(f)(msg, iter->second);
+
+            QuoteApi::subscribeBook(iter->second);
         }
         if constexpr (std::is_same_v<QuoteType, Trade>) {
-            auto result = trade_.find(symbol);
-            if (result != trade_.end()) {
-                std::forward<F>(f)(msg, result->second);
-            } else {
-                result = trade_.emplace(std::piecewise_construct, std::forward_as_tuple(symbol), std::forward_as_tuple()).first;
-                std::forward<F>(f)(msg, result->second);
-            }
-            QuoteApi::subscribeTrade(result->second);
+            auto iter = trade_.try_emplace(symbol).first;
+            std::forward<F>(f)(msg, iter->second);
+
+            QuoteApi::subscribeTrade(iter->second);
         }
         if constexpr (std::is_same_v<QuoteType, Kline>) {
-            auto result = kline_.find(symbol);
-            if (result != kline_.end()) {
-                std::forward<F>(f)(msg, result->second);
-            } else {
-                result = kline_.emplace(std::piecewise_construct, std::forward_as_tuple(symbol), std::forward_as_tuple()).first;
-                std::forward<F>(f)(msg, result->second);
-            }
-            QuoteApi::subscribeKline(result->second);
+            auto iter = kline_.try_emplace(symbol).first;
+            std::forward<F>(f)(msg, iter->second);
+
+            QuoteApi::subscribeKline(iter->second);
         }
         if constexpr (std::is_same_v<QuoteType, InstrumentInfo>) {
-            auto result = instrumentInfo_.find(symbol);
-            if (result != instrumentInfo_.end()) {
-                std::forward<F>(f)(msg, result->second);
-            } else {
-                result = instrumentInfo_.emplace(std::piecewise_construct, std::forward_as_tuple(symbol), std::forward_as_tuple()).first;
-                std::forward<F>(f)(msg, result->second);
-            }
-            QuoteApi::subscribeInstrumentInfo(result->second);
+            auto iter = instrumentInfo_.try_emplace(symbol).first;
+            std::forward<F>(f)(msg, iter->second);
+
+            QuoteApi::subscribeInstrumentInfo(iter->second);
         }
     }
 

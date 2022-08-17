@@ -26,6 +26,17 @@ public:
         return ret;
     }
 
+    template <typename... Args>
+    auto try_emplace(Args &&... data)
+    {
+        auto ret = MapType::try_emplace(std::forward<Args>(data)...);
+        if (ret.second) {
+            topic_(ret.first->first, ret.first->second);
+        }
+
+        return ret;
+    }
+
     template <typename F, typename = std::enable_if_t<std::is_invocable_v<F, KeyType &, ValueType &>>>
     auto subscribe(F &&f)
     {
