@@ -38,9 +38,22 @@ int main()
     });
 
     BybitSpotQuoteAdapter bybitSpot(config);
+
+    bybitSpot.addNewSymbolEvent<MarketBook>([](auto &symbol, auto &book){
+        spdlog::info("BybitSpotQuoteAdapter NewSymbolEvent for book, symbol={}", symbol);
+    });
+    bybitSpot.addNewSymbolEvent<Trade>([](auto &symbol, auto &book){
+        spdlog::info("BybitSpotQuoteAdapter NewSymbolEvent for Trade, symbol={}", symbol);
+    });
+
     bybitSpot.connect();
 
     BybitPerpetualQuoteAdapter bybitPerpetual(config);
+
+    bybitPerpetual.addNewSymbolEvent<Trade>([](auto &symbol, auto &book){
+        spdlog::info("BybitPerpetualQuoteAdapter NewSymbolEvent for Trade, symbol={}", symbol);
+    });
+
     bybitPerpetual.connect();
 
     while (true) {

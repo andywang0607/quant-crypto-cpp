@@ -3,7 +3,7 @@
 
 #include "QuoteData.hpp"
 #include "QuoteNode.hpp"
-#include "WebSocketReceiver.hpp"
+#include "QuoteAdapter.hpp"
 #include "TimeUtils.hpp"
 
 #include <cstddef>
@@ -153,7 +153,7 @@ private:
     nlohmann::json config_;
 };
 
-using BybitSpotQuoteAdapter = WebSocketReceiver<BybitSpotQuoteHandler>;
+using BybitSpotQuoteAdapter = QuoteAdapter<BybitSpotQuoteHandler>;
 
 
 } // namespace QuantCrypto::Quote

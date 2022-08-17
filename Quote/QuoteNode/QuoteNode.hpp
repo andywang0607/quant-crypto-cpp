@@ -45,6 +45,23 @@ public:
         }
     }
 
+    template <typename QuoteType, typename F>
+    void addNewSymbolEvent(F &&f)
+    {
+        if constexpr (std::is_same_v<QuoteType, MarketBook>) {
+            unsubscriber_ += marketBook_.subscribe(std::forward<F>(f));
+        }
+        if constexpr (std::is_same_v<QuoteType, Trade>) {
+            unsubscriber_ += trade_.subscribe(std::forward<F>(f));
+        }
+        if constexpr (std::is_same_v<QuoteType, Kline>) {
+            unsubscriber_ += kline_.subscribe(std::forward<F>(f));
+        }
+        if constexpr (std::is_same_v<QuoteType, InstrumentInfo>) {
+            unsubscriber_ += instrumentInfo_.subscribe(std::forward<F>(f));
+        }
+    }
+
     Util::Event::PublisherMap<std::string, MarketBook> marketBook_;
     Util::Event::PublisherMap<std::string, Trade> trade_;
     Util::Event::PublisherMap<std::string, Kline> kline_;
