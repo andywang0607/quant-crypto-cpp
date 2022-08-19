@@ -77,6 +77,11 @@ public:
         return true;
     }
 
+    inline HandlerType &getHandler()
+    {
+        return handler_;
+    }
+
 private:
     void onOpen(websocketpp::connection_hdl)
     {

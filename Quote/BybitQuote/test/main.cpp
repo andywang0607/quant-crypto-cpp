@@ -17,10 +17,43 @@ int main()
     bybitConfig["klineType"] = nlohmann::json::array({"1m", "1h"});
     config["exchange"]["bybit"] = bybitConfig;
 
+    QuoteApi::subscribeBook.subscribe([](auto &book){
+        static int count = 0;
+        spdlog::info("bookCount={}", count++);
+    });
+
+    QuoteApi::subscribeTrade.subscribe([](auto &trade){
+        static int count = 0;
+        spdlog::info("tradeCount={}", count++);
+    });
+
+    QuoteApi::subscribeKline.subscribe([](auto &trade){
+        static int count = 0;
+        spdlog::info("klineCount={}", count++);
+    });
+
+    QuoteApi::subscribeInstrumentInfo.subscribe([](auto &trade){
+        static int count = 0;
+        spdlog::info("InstrumentInfoCount={}", count++);
+    });
+
     BybitSpotQuoteAdapter bybitSpot(config);
+
+    bybitSpot.addNewSymbolEvent<MarketBook>([](auto &symbol, auto &book){
+        spdlog::info("BybitSpotQuoteAdapter NewSymbolEvent for book, symbol={}", symbol);
+    });
+    bybitSpot.addNewSymbolEvent<Trade>([](auto &symbol, auto &book){
+        spdlog::info("BybitSpotQuoteAdapter NewSymbolEvent for Trade, symbol={}", symbol);
+    });
+
     bybitSpot.connect();
 
     BybitPerpetualQuoteAdapter bybitPerpetual(config);
+
+    bybitPerpetual.addNewSymbolEvent<Trade>([](auto &symbol, auto &book){
+        spdlog::info("BybitPerpetualQuoteAdapter NewSymbolEvent for Trade, symbol={}", symbol);
+    });
+
     bybitPerpetual.connect();
 
     while (true) {
