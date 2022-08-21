@@ -6,12 +6,14 @@
 #include "QuoteSerializer.hpp"
 #include "TimeUtils.hpp"
 
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <type_traits>
 #include <unordered_map>
 
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 
 namespace QuantCrypto::QuoteReceiver::QuoteUtil {
 
@@ -35,27 +37,33 @@ public:
             }
             return root_ + "/" + getTypeFodlerName(quote) + "/" + exchange + "/" + symbol + "/" + date + ".txt";
         }();
-        std::string dirName = getDirname(path);
-        std::filesystem::create_directories(dirName);
+        spdlog::info("[QuoteWritter] New file: {}", path);
 
-        auto &fileWriter = fileWriterMap_.try_emplace(symbol, path, std::ios_base::app).first->second;
+        try {
+            std::string dirName = getDirname(path);
+            std::filesystem::create_directories(dirName);
 
-        if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::MarketBook>) {
-            QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&fileWriter](auto &book) {
-                const auto symbol = book.header_.symbol_;
-                fileWriter << book << "\n";
-            });
-        }
-        if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Trade>) {
-            QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&fileWriter](auto &trade) {
-                static int count = 0;
-                const auto symbol = trade.header_.symbol_;
-                fileWriter << trade << "\n";
-                if (count++ >= 5) {
-                    fileWriter.flush();
-                    count = 0;
-                }
-            });
+            auto &fileWriter = fileWriterMap_.try_emplace(symbol, path, std::ios_base::app).first->second;
+
+            if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::MarketBook>) {
+                QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&fileWriter](auto &book) {
+                    const auto symbol = book.header_.symbol_;
+                    fileWriter << book << "\n";
+                });
+            }
+            if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Trade>) {
+                QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&fileWriter](auto &trade) {
+                    static int count = 0;
+                    const auto symbol = trade.header_.symbol_;
+                    fileWriter << trade << "\n";
+                    if (count++ >= 5) {
+                        fileWriter.flush();
+                        count = 0;
+                    }
+                });
+            }
+        } catch (std::exception &e) {
+            spdlog::info("[QuoteWritter] exception: {}", e.what());
         }
     }
 
