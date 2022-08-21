@@ -17,22 +17,22 @@ int main()
     bybitConfig["klineType"] = nlohmann::json::array({"1m", "1h"});
     config["exchange"]["bybit"] = bybitConfig;
 
-    QuoteApi::subscribeBook.subscribe([](auto &book){
+    QuoteApi::onNewBook.subscribe([](auto &book){
         static int count = 0;
         spdlog::info("bookCount={}", count++);
     });
 
-    QuoteApi::subscribeTrade.subscribe([](auto &trade){
+    QuoteApi::onNewTrade.subscribe([](auto &trade){
         static int count = 0;
         spdlog::info("tradeCount={}", count++);
     });
 
-    QuoteApi::subscribeKline.subscribe([](auto &trade){
+    QuoteApi::onNewKline.subscribe([](auto &trade){
         static int count = 0;
         spdlog::info("klineCount={}", count++);
     });
 
-    QuoteApi::subscribeInstrumentInfo.subscribe([](auto &trade){
+    QuoteApi::onNewInstrumentInfo.subscribe([](auto &trade){
         static int count = 0;
         spdlog::info("InstrumentInfoCount={}", count++);
     });

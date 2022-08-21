@@ -23,25 +23,25 @@ public:
             auto iter = marketBook_.try_emplace(symbol).first;
             std::forward<F>(f)(msg, iter->second);
 
-            QuoteApi::subscribeBook(iter->second);
+            QuoteApi::onNewBook(iter->second);
         }
         if constexpr (std::is_same_v<QuoteType, Trade>) {
             auto iter = trade_.try_emplace(symbol).first;
             std::forward<F>(f)(msg, iter->second);
 
-            QuoteApi::subscribeTrade(iter->second);
+            QuoteApi::onNewTrade(iter->second);
         }
         if constexpr (std::is_same_v<QuoteType, Kline>) {
             auto iter = kline_.try_emplace(symbol).first;
             std::forward<F>(f)(msg, iter->second);
 
-            QuoteApi::subscribeKline(iter->second);
+            QuoteApi::onNewKline(iter->second);
         }
         if constexpr (std::is_same_v<QuoteType, InstrumentInfo>) {
             auto iter = instrumentInfo_.try_emplace(symbol).first;
             std::forward<F>(f)(msg, iter->second);
 
-            QuoteApi::subscribeInstrumentInfo(iter->second);
+            QuoteApi::onNewInstrumentInfo(iter->second);
         }
     }
 

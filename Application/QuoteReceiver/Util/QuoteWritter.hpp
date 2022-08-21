@@ -41,13 +41,13 @@ public:
         auto &fileWriter = fileWriterMap_.try_emplace(symbol, path, std::ios_base::app).first->second;
 
         if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::MarketBook>) {
-            QuantCrypto::Quote::QuoteApi::subscribeBook.subscribe([&fileWriter](auto &book) {
+            QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&fileWriter](auto &book) {
                 const auto symbol = book.header_.symbol_;
                 fileWriter << book << "\n";
             });
         }
         if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Trade>) {
-            QuantCrypto::Quote::QuoteApi::subscribeTrade.subscribe([&fileWriter](auto &trade) {
+            QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&fileWriter](auto &trade) {
                 static int count = 0;
                 const auto symbol = trade.header_.symbol_;
                 fileWriter << trade << "\n";
