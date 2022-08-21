@@ -17,9 +17,9 @@ enum class QuoteType : char
     InstrumentInfo = 'I',
 };
 
-enum class ExchangeT : int8_t
+enum class ExchangeT : char
 {
-    ByBit = 1,
+    ByBit = '1',
 };
 
 struct Header

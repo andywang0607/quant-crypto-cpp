@@ -2,8 +2,11 @@
     "exchange": {
         "bybit" :{
             "enabled": true,
-            "symbol":[],
+            "symbol":[""],
             "klineType": ["1m"]
         }
+    },
+    "QuoteReceiver": {
+        "root": ""
     }
 }

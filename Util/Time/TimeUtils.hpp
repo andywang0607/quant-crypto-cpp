@@ -26,6 +26,16 @@ inline std::string getDateTime()
     return to_iso_string(localTime);
 }
 
+inline std::string getDate()
+{
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y%m%d");
+    return oss.str();
+}
+
 /**
 * \brief convert ISO 8601 date time string to timestamp 
 * \param[in] ISO 8601 datetime string, ex: 2020-03-30T02:21:06.000Z
