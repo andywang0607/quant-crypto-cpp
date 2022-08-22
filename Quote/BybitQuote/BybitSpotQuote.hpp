@@ -77,10 +77,12 @@ public:
         const auto &topic = jsonMsg["topic"];
 
         const std::string &symbol = jsonMsg["params"]["symbol"].get<std::string>();
+        const std::string exchangeSymbol = symbol + ".Bybit";
+
         if (topic == "trade") {
-            forQuoteData<Trade>(symbol, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
+            forQuoteData<Trade>(exchangeSymbol, jsonMsg, [this, exchangeSymbol](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::Trade;
-                updateHeader(quote, json, symbol);
+                updateHeader(quote, json, exchangeSymbol);
                 updateTrade(quote, json);
                 spdlog::info("[Trade] {}", quote.dump());
             });
@@ -88,9 +90,9 @@ public:
         }
 
         if (topic == "depth") {
-            forQuoteData<MarketBook>(symbol, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
+            forQuoteData<MarketBook>(exchangeSymbol, jsonMsg, [this, exchangeSymbol](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::MarketBook;
-                updateHeader(quote, json, symbol);
+                updateHeader(quote, json, exchangeSymbol);
                 quote.clear();
                 updateBook(quote, json);
                 spdlog::info("[Book] {}", quote.dump());
@@ -99,9 +101,9 @@ public:
         }
 
         if (topic == "kline") {
-            forQuoteData<Kline>(symbol, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
+            forQuoteData<Kline>(exchangeSymbol, jsonMsg, [this, exchangeSymbol](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::Kline;
-                updateHeader(quote, json, symbol);
+                updateHeader(quote, json, exchangeSymbol);
                 updateKline(quote, json);
                 spdlog::info("[Kline] {}", quote.dump());
             });
