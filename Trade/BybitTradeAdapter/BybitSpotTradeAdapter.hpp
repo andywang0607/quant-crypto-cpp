@@ -3,8 +3,8 @@
 
 #include "BybitSignTool.hpp"
 #include "TimeUtils.hpp"
-#include "TradeApi.hpp"
 #include "TradeNode.hpp"
+#include "TradeAdapter.hpp"
 
 #include <map>
 #include <string>
@@ -18,16 +18,16 @@ using namespace Util::Sign;
 
 namespace QuantCrypto::Trade::Bybit {
 
-class BybitSpotTradeAdapter : public QuantCrypto::Trade::TradeApi, public QuantCrypto::Trade::SpotTradeNode
+class BybitSpotTradeHandler : public QuantCrypto::Trade::SpotTradeNode
 {
 public:
-    BybitSpotTradeAdapter(const nlohmann::json &config)
+    BybitSpotTradeHandler(const nlohmann::json &config)
         : config_(config)
         , apiSecret_(config["exchange"]["bybit"]["apiSecret"].get<std::string>())
     {
     }
 
-    virtual bool createOrder(Order *order) override
+    bool createOrder(Order *order)
     {
         static const std::string Path = "spot/v1/order";
 
@@ -77,7 +77,7 @@ public:
         return true;
     }
 
-    virtual bool deleteOrder(Order *order) override
+    bool deleteOrder(Order *order)
     {
         static const std::string Path = "spot/v1/order";
         static std::map<std::string, std::string> params{
@@ -98,7 +98,7 @@ public:
         return true;
     }
 
-    virtual bool queryWallet() override
+    bool queryWallet()
     {
         static const std::string Path = "spot/v1/account";
         static std::map<std::string, std::string> params{
@@ -141,6 +141,8 @@ private:
     nlohmann::json config_;
     std::string apiSecret_;
 };
+
+using BybitSpotTradeAdapter = TradeAdapter<Bybit::BybitSpotTradeHandler, nlohmann::json>;
 
 } // namespace QuantCrypto::Trade::Bybit
 #endif // __BYBITSPOTTRADEADAPTER_H__
