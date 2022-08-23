@@ -43,18 +43,26 @@ public:
             std::string dirName = getDirname(path);
             std::filesystem::create_directories(dirName);
 
-            auto &fileWriter = fileWriterMap_.try_emplace(symbol, path, std::ios_base::app).first->second;
+            auto iter = fileWriterMap_.try_emplace(symbol, path, std::ios_base::app).first;
+            auto &symbol = iter->first;
+            auto &fileWriter = iter->second;
 
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::MarketBook>) {
-                QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&fileWriter](auto &book) {
-                    const auto symbol = book.header_.symbol_;
+                QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&symbol, &fileWriter](auto &book) {
+                    const auto receivedSymbol = book.header_.symbol_;
+                    if (receivedSymbol != symbol) {
+                        return;
+                    }
                     fileWriter << book << "\n";
                 });
             }
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Trade>) {
-                QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&fileWriter](auto &trade) {
+                QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&symbol, &fileWriter](auto &trade) {
                     static int count = 0;
-                    const auto symbol = trade.header_.symbol_;
+                    const auto receivedSymbol = trade.header_.symbol_;
+                    if (receivedSymbol != symbol) {
+                        return;
+                    }
                     fileWriter << trade << "\n";
                     if (count++ >= 5) {
                         fileWriter.flush();
