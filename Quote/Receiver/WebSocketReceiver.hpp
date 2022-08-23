@@ -43,9 +43,12 @@ public:
     ~WebSocketReceiver()
     {
         close(websocketpp::close::status::going_away);
-        if (wsThread_.joinable()) {
-            wsThread_.join();
+        for (auto &thraed : wsThread_) {
+            if (thraed.joinable()) {
+                thraed.join();
+            }
         }
+        wsThread_.clear();
     }
 
     bool connect()
@@ -63,7 +66,7 @@ public:
 
             hdl_ = con->get_handle();
             client_.connect(con);
-            wsThread_ = std::thread(&client::run, &client_);
+            wsThread_.emplace_back(&client::run, &client_);
 
             spdlog::info("[WebSocketReceiver] connect: {}", ec.message());
         } catch (const std::exception &e) {
@@ -107,7 +110,7 @@ private:
     {
         client::connection_ptr con = client_.get_con_from_hdl(hdl_);
 
-        spdlog::info("[WebSocketReceiver] onClose: Connection Closed, remote close code: {}", con->get_remote_close_code());
+        spdlog::warn("[WebSocketReceiver] onClose: Connection Closed, remote close code={}, reconnect ret={}", con->get_remote_close_code(), connect());
     }
 
     void subscribe()
@@ -144,7 +147,7 @@ private:
 
     client client_;
     websocketpp::connection_hdl hdl_;
-    std::thread wsThread_;
+    std::vector<std::thread> wsThread_;
     HandlerType handler_;
 };
 } // namespace QuantCrypto::Quote
