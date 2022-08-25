@@ -5,13 +5,13 @@
 #include "QuoteData.hpp"
 #include "QuoteNode.hpp"
 #include "TimeUtils.hpp"
+#include "Logger.hpp"
 
 #include <chrono>
 #include <cstddef>
 #include <string>
 
 #include <nlohmann/json.hpp>
-#include <spdlog/spdlog.h>
 
 using namespace Util::Time;
 
@@ -24,6 +24,7 @@ public:
 
     explicit BybitPerpetualQuoteHandler(const nlohmann::json &config)
         : config_(config)
+        , logger_("BybitPerpetualQuote")
     {
     }
 
@@ -76,7 +77,7 @@ public:
                     return std::stoll(json["trade_time_ms"].get<std::string>());
                 });
                 updateTrade(quote, json);
-                spdlog::info("[Trade] {}", quote.dump());
+                logger_.debug("[Trade] {}", quote.dump());
             });
             return;
         }
@@ -95,7 +96,7 @@ public:
                     return std::stoll(json["timestamp_e6"].get<std::string>()) / 1000.f;
                 });
                 updateInstrumentInfo(quote, json);
-                spdlog::info("[InstrumentInfo] {}", quote.dump());
+                logger_.debug("[InstrumentInfo] {}", quote.dump());
             });
             return;
         }
@@ -181,6 +182,7 @@ private:
     }
 
     nlohmann::json config_;
+    Util::Log::Logger logger_;
 };
 
 using BybitPerpetualQuoteAdapter = QuoteAdapter<BybitPerpetualQuoteHandler>;

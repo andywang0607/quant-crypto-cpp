@@ -1,9 +1,10 @@
 #ifndef __WEBSOCKETRECEIVER_H__
 #define __WEBSOCKETRECEIVER_H__
 
+#include "Logger.hpp"
+
 #include <thread>
 
-#include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio_client.hpp>
@@ -20,6 +21,7 @@ class WebSocketReceiver
 public:
     explicit WebSocketReceiver(const nlohmann::json &config)
         : handler_(config)
+        , logger_("WebSocketReceiver")
     {
         using websocketpp::lib::bind;
         using websocketpp::lib::placeholders::_1;
@@ -31,7 +33,7 @@ public:
 
         // Initialize ASIO
         client_.init_asio();
-        client_.set_tls_init_handler(bind(&WebSocketReceiver::on_tls_init));
+        client_.set_tls_init_handler(bind(&WebSocketReceiver::on_tls_init, this));
 
         // Register our handlers
         client_.set_open_handler(bind(&WebSocketReceiver::onOpen, this, _1));
@@ -58,9 +60,9 @@ public:
             // the event loop starts
             websocketpp::lib::error_code ec;
             client::connection_ptr con = client_.get_connection(HandlerType::Uri, ec);
-            spdlog::info("[WebSocketReceiver] connect uri: {}", HandlerType::Uri);
+            logger_.info("connect uri: {}", HandlerType::Uri);
             if (ec) {
-                spdlog::info("[WebSocketReceiver] could not create connection: {}", ec.message());
+                logger_.error("could not create connection: {}", ec.message());
                 return false;
             }
 
@@ -68,13 +70,13 @@ public:
             client_.connect(con);
             wsThread_.emplace_back(&client::run, &client_);
 
-            spdlog::info("[WebSocketReceiver] connect: {}", ec.message());
+            logger_.info("connect: {}", ec.message());
         } catch (const std::exception &e) {
-            spdlog::error("[WebSocketReceiver] exception: {}", e.what());
+            logger_.error("exception: {}", e.what());
         } catch (websocketpp::lib::error_code e) {
-            spdlog::error("[WebSocketReceiver] exception: {}", e.message());
+            logger_.error("exception: {}", e.message());
         } catch (...) {
-            spdlog::error("[WebSocketReceiver] other exception");
+            logger_.error("other exception");
         }
 
         return true;
@@ -88,19 +90,19 @@ public:
 private:
     void onOpen(websocketpp::connection_hdl)
     {
-        spdlog::info("[WebSocketReceiver] onOpen");
+        logger_.info("onOpen");
         subscribe();
     }
 
     void onFail(websocketpp::connection_hdl)
     {
-        spdlog::warn("[WebSocketReceiver] onFail: Connection Failed");
+        logger_.warn("onFail: Connection Failed");
     }
 
     void onMessage(websocketpp::connection_hdl, message_ptr msg)
     {
         if (msg->get_opcode() != websocketpp::frame::opcode::text) {
-            spdlog::warn("[WebSocketReceiver] unsupported opcode: {}", msg->get_opcode());
+            logger_.warn("unsupported opcode: {}", msg->get_opcode());
         }
 
         handler_.onMessage(msg->get_payload());
@@ -110,7 +112,7 @@ private:
     {
         client::connection_ptr con = client_.get_con_from_hdl(hdl_);
 
-        spdlog::warn("[WebSocketReceiver] onClose: Connection Closed, remote close code={}, reconnect ret={}", con->get_remote_close_code(), connect());
+        logger_.warn("onClose: Connection Closed, remote close code={}, reconnect ret={}", con->get_remote_close_code(), connect());
     }
 
     void subscribe()
@@ -121,14 +123,14 @@ private:
 
             client_.send(hdl_, req.dump(), websocketpp::frame::opcode::text, ec);
             if (ec) {
-                spdlog::error("[WebSocketReceiver] Error sending message: {}", ec.message());
+                logger_.error("Error sending message: {}", ec.message());
                 return;
             }
-            spdlog::info("[WebSocketReceiver] subscribe Message: {}", req.dump());
+            logger_.info("subscribe Message: {}", req.dump());
         }
     }
 
-    static context_ptr on_tls_init()
+    context_ptr on_tls_init()
     {
         // establishes a SSL connection
         context_ptr ctx = std::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::sslv23);
@@ -139,7 +141,7 @@ private:
                              boost::asio::ssl::context::no_sslv3 |
                              boost::asio::ssl::context::single_dh_use);
         } catch (std::exception &e) {
-            spdlog::info("[BybitQuote] Error in context pointer: {}", e.what());
+            logger_.error("Error in context pointer: {}", e.what());
         }
         return ctx;
     }
@@ -149,6 +151,7 @@ private:
     websocketpp::connection_hdl hdl_;
     std::vector<std::thread> wsThread_;
     HandlerType handler_;
+    Util::Log::Logger logger_;
 };
 } // namespace QuantCrypto::Quote
 #endif // __WEBSOCKETRECEIVER_H__

@@ -5,13 +5,13 @@
 #include "TimeUtils.hpp"
 #include "TradeAdapter.hpp"
 #include "TradeNode.hpp"
+#include "Logger.hpp"
 
 #include <map>
 #include <string>
 
 #include <nlohmann/json.hpp>
 #include <restclient-cpp/restclient.h>
-#include <spdlog/spdlog.h>
 
 using namespace QuantCrypto::Trade;
 using namespace Util::Sign;
@@ -24,6 +24,7 @@ public:
     BybitPerpetualTradeHandler(const nlohmann::json &config)
         : config_(config)
         , apiSecret_(config["exchange"]["bybit"]["apiSecret"].get<std::string>())
+        , logger_("BybitPerpetualTrade")
     {
     }
 
@@ -98,13 +99,13 @@ public:
 
         RestClient::Response r = RestClient::post(request, "application/x-www-form-urlencoded", "");
         if (r.code != 200) {
-            spdlog::info("[BybitPerpetualTrade] createOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
+            logger_.warn("createOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
             return false;
         }
 
         const auto result = nlohmann::json::parse(r.body);
         if (result["ret_code"].get<int>() != 0 || result["ext_code"].get<std::string>() != "") {
-            spdlog::info("[BybitPerpetualTrade] createOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
+            logger_.warn("createOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
             return false;
         }
 
@@ -126,13 +127,13 @@ public:
 
         RestClient::Response r = RestClient::post(request, "application/x-www-form-urlencoded", "");
         if (r.code != 200) {
-            spdlog::info("[BybitSpotTrade] deleteOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
+            logger_.warn("deleteOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
             return false;
         }
 
         const auto result = nlohmann::json::parse(r.body);
         if (result["ret_code"].get<int>() != 0 || result["ext_code"].get<std::string>() != "") {
-            spdlog::info("[BybitPerpetualTrade] deleteOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
+            logger_.warn("deleteOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
             return false;
         }
 
@@ -152,13 +153,13 @@ public:
 
         RestClient::Response r = RestClient::get(request);
         if (r.code != 200) {
-            spdlog::info("[BybitSpotTrade] queryWallet failed, request={} r.code={}, r.body={}", request, r.code, r.body);
+            logger_.warn("queryWallet failed, request={} r.code={}, r.body={}", request, r.code, r.body);
             return false;
         }
 
         const auto result = nlohmann::json::parse(r.body);
         if (result["ret_code"].get<int>() != 0 || result["ext_code"].get<std::string>() != "") {
-            spdlog::info("[BybitPerpetualTrade] queryWallet failed, request={} r.code={}, r.body={}", request, r.code, r.body);
+            logger_.warn("queryWallet failed, request={} r.code={}, r.body={}", request, r.code, r.body);
             return false;
         }
 
@@ -177,7 +178,7 @@ public:
             coinPosition.unrealisedPnl_ = coinObj["unrealised_pnl"].get<double>();
             coinPosition.accumulatedPnl_ = coinObj["cum_realised_pnl"].get<double>();
 
-            spdlog::info("coin={}, position={}", coin, coinPosition.dump());
+            logger_.info("coin={}, position={}", coin, coinPosition.dump());
         }
 
         return true;
@@ -193,6 +194,7 @@ private:
     static inline std::string URL = "https://api.bybit.com/";
     nlohmann::json config_;
     std::string apiSecret_;
+    Util::Log::Logger logger_;
 };
 
 using BybitPerpetualTradeAdapter = TradeAdapter<Bybit::BybitPerpetualTradeHandler, nlohmann::json>;
