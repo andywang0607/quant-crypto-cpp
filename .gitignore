@@ -38,3 +38,9 @@ debug/
 lib/
 bin/
 include/
+
+# Ascii data
+*ascii*/
+
+# Log
+logs/
