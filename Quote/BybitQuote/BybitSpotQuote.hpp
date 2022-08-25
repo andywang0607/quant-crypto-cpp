@@ -10,7 +10,7 @@
 #include <string>
 
 #include <nlohmann/json.hpp>
-#include <spdlog/spdlog.h>
+#include "Logger.hpp"
 
 using namespace Util::Time;
 
@@ -23,6 +23,7 @@ public:
 
     explicit BybitSpotQuoteHandler(const nlohmann::json &config)
         : config_(config)
+        , logger_("BybitSpotQuote")
     {
     }
 
@@ -84,7 +85,7 @@ public:
                 quote.header_.type_ = QuoteType::Trade;
                 updateHeader(quote, json, exchangeSymbol);
                 updateTrade(quote, json);
-                spdlog::info("[Trade] {}", quote.dump());
+                logger_.debug("[Trade] {}", quote.dump());
             });
             return;
         }
@@ -95,7 +96,7 @@ public:
                 updateHeader(quote, json, exchangeSymbol);
                 quote.clear();
                 updateBook(quote, json);
-                spdlog::info("[Book] {}", quote.dump());
+                logger_.debug("[Book] {}", quote.dump());
             });
             return;
         }
@@ -105,7 +106,7 @@ public:
                 quote.header_.type_ = QuoteType::Kline;
                 updateHeader(quote, json, exchangeSymbol);
                 updateKline(quote, json);
-                spdlog::info("[Kline] {}", quote.dump());
+                logger_.debug("[Kline] {}", quote.dump());
             });
             return;
         }
@@ -153,6 +154,7 @@ private:
     }
 
     nlohmann::json config_;
+    Util::Log::Logger logger_;
 };
 
 using BybitSpotQuoteAdapter = QuoteAdapter<BybitSpotQuoteHandler>;

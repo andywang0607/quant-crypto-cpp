@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 
 using namespace QuantCrypto::Quote;
 

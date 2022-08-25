@@ -4,7 +4,7 @@ target_sources(
                        ${CMAKE_CURRENT_SOURCE_DIR}/BybitPerpetualQuote.hpp)
 
 target_include_directories(BybitQuote INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(BybitQuote INTERFACE QuoteNode QuoteApi Util-Time json spdlog_header_only)
+target_link_libraries(BybitQuote INTERFACE QuoteNode QuoteApi Util-Time Util-Log json)
 
 install(
   TARGETS BybitQuote

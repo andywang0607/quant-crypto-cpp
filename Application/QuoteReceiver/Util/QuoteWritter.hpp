@@ -5,6 +5,7 @@
 #include "QuoteData.hpp"
 #include "QuoteSerializer.hpp"
 #include "TimeUtils.hpp"
+#include "Logger.hpp"
 
 #include <exception>
 #include <filesystem>
@@ -13,7 +14,6 @@
 #include <unordered_map>
 
 #include <nlohmann/json.hpp>
-#include <spdlog/spdlog.h>
 
 namespace QuantCrypto::QuoteReceiver::QuoteUtil {
 
@@ -23,6 +23,7 @@ class QuoteWritter
 public:
     QuoteWritter(const nlohmann::json &config)
         : root_(config["QuoteReceiver"]["root"].get<std::string>())
+        , logger_("QuoteWritter")
     {
     }
 
@@ -37,7 +38,7 @@ public:
             }
             return root_ + "/" + getTypeFodlerName(quote) + "/" + exchange + "/" + symbol + "/" + date + ".txt";
         }();
-        spdlog::info("[QuoteWritter] New file: {}", path);
+        logger_.info("New file: {}", path);
 
         try {
             std::string dirName = getDirname(path);
@@ -71,7 +72,7 @@ public:
                 });
             }
         } catch (std::exception &e) {
-            spdlog::info("[QuoteWritter] exception: {}", e.what());
+            logger_.error("exception: {}", e.what());
         }
     }
 
@@ -101,6 +102,7 @@ private:
 
     std::string root_;
     std::unordered_map<std::string, std::ofstream> fileWriterMap_;
+    Util::Log::Logger logger_;
 };
 } // namespace QuantCrypto::QuoteReceiver::QuoteUtil
 

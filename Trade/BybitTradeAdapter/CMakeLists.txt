@@ -5,7 +5,7 @@ target_sources(
             ${CMAKE_CURRENT_SOURCE_DIR}/BybitPerpetualTradeAdapter.hpp)
 target_include_directories(BybitTradeAdapter
                            INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(BybitTradeAdapter INTERFACE TradeApi Util-Time Util-Sign
-                                                  json spdlog restclient-cpp)
+target_link_libraries(BybitTradeAdapter INTERFACE TradeApi Util json
+                                                  restclient-cpp)
 
 add_subdirectory(test)
