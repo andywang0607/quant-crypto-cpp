@@ -58,6 +58,9 @@ public:
     void onMessage(const std::string &msg)
     {
         const auto jsonMsg = nlohmann::json::parse(msg);
+        if (isPong(jsonMsg)) {
+            logger_.info(msg);
+        }
         if (!jsonMsg.contains("topic")) {
             return;
         }
@@ -100,6 +103,12 @@ public:
             });
             return;
         }
+    }
+
+    nlohmann::json genPingMessage()
+    {
+        return {
+            {"op", "ping"}};
     }
 
 private:
@@ -179,6 +188,12 @@ private:
             }()
                                                                            : quote.nextFundingTime_;
         }
+    }
+
+    inline bool isPong(const nlohmann::json &msg)
+    {
+        auto iter = msg.find("ret_msg");
+        return iter != msg.end() && *iter == "pong";
     }
 
     nlohmann::json config_;

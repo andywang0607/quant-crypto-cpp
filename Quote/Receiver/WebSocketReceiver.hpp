@@ -3,6 +3,7 @@
 
 #include "Logger.hpp"
 
+#include <chrono>
 #include <thread>
 
 #include <nlohmann/json.hpp>
@@ -22,6 +23,7 @@ public:
     explicit WebSocketReceiver(const nlohmann::json &config)
         : handler_(config)
         , logger_("WebSocketReceiver")
+        , isOpen_(false)
     {
         using websocketpp::lib::bind;
         using websocketpp::lib::placeholders::_1;
@@ -51,6 +53,13 @@ public:
             }
         }
         wsThread_.clear();
+
+        for (auto &thraed : pingPongThread_) {
+            if (thraed.joinable()) {
+                thraed.join();
+            }
+        }
+        pingPongThread_.clear();
     }
 
     bool connect()
@@ -91,7 +100,9 @@ private:
     void onOpen(websocketpp::connection_hdl)
     {
         logger_.info("onOpen");
+        isOpen_ = true;
         subscribe();
+        initPingPong();
     }
 
     void onFail(websocketpp::connection_hdl)
@@ -111,7 +122,7 @@ private:
     void onClose(websocketpp::connection_hdl)
     {
         client::connection_ptr con = client_.get_con_from_hdl(hdl_);
-
+        isOpen_ = false;
         logger_.warn("onClose: Connection Closed, remote close code={}, reconnect ret={}", con->get_remote_close_code(), connect());
     }
 
@@ -128,6 +139,23 @@ private:
             }
             logger_.info("subscribe Message: {}", req.dump());
         }
+    }
+
+    void initPingPong()
+    {
+        pingPongThread_.emplace_back([this]() {
+            while (isOpen_) {
+                std::this_thread::sleep_for(std::chrono::seconds(30));
+                websocketpp::lib::error_code ec;
+                const auto pingMsg = handler_.genPingMessage();
+                client_.send(hdl_, pingMsg.dump(), websocketpp::frame::opcode::text, ec);
+                if (ec) {
+                    logger_.error("Error ping message: {}", ec.message());
+                    return;
+                }
+                logger_.info("ping Message: {}", pingMsg.dump());
+            }
+        });
     }
 
     context_ptr on_tls_init()
@@ -150,8 +178,10 @@ private:
     client client_;
     websocketpp::connection_hdl hdl_;
     std::vector<std::thread> wsThread_;
+    std::vector<std::thread> pingPongThread_;
     HandlerType handler_;
     Util::Log::Logger logger_;
+    bool isOpen_;
 };
 } // namespace QuantCrypto::Quote
 #endif // __WEBSOCKETRECEIVER_H__
