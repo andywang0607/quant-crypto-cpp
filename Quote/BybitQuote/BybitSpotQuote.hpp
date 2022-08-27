@@ -72,6 +72,10 @@ public:
     void onMessage(const std::string &msg)
     {
         const auto jsonMsg = nlohmann::json::parse(msg);
+        if (jsonMsg.contains("pong")) {
+            logger_.info(jsonMsg.dump());
+            return;
+        }
         if (!jsonMsg.contains("data")) {
             return;
         }
@@ -110,6 +114,12 @@ public:
             });
             return;
         }
+    }
+
+    nlohmann::json genPingMessage()
+    {
+        return {
+            {"ping", 1535975085152}};
     }
 
 private:
