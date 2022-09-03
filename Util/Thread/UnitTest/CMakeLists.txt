@@ -1,5 +1,5 @@
 set(UNIT_TEST_NAME ThreadUtilTester)
-add_executable(${UNIT_TEST_NAME} ThreadUtilTest.cpp)
+add_executable(${UNIT_TEST_NAME} ThreadUtilTest.cpp LooperTest.cpp)
 
 target_link_libraries(${UNIT_TEST_NAME} Util-Thread)
 target_link_libraries(${UNIT_TEST_NAME} gtest_main)
