@@ -4,7 +4,7 @@ target_sources(Receiver
                INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/WebSocketReceiver.hpp)
 
 target_include_directories(Receiver INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(Receiver INTERFACE Util-Log websocketpp json)
+target_link_libraries(Receiver INTERFACE Util-Log Util-Thread websocketpp json)
 find_package(Threads REQUIRED)
 if(Threads_FOUND)
   target_link_libraries(Receiver INTERFACE Threads::Threads)

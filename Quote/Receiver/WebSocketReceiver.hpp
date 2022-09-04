@@ -2,6 +2,7 @@
 #define __WEBSOCKETRECEIVER_H__
 
 #include "Logger.hpp"
+#include "Timer.hpp"
 
 #include <chrono>
 #include <thread>
@@ -24,6 +25,7 @@ public:
         : handler_(config)
         , logger_("WebSocketReceiver")
         , isOpen_(false)
+        , timer_("WSTimer")
     {
         using websocketpp::lib::bind;
         using websocketpp::lib::placeholders::_1;
@@ -42,10 +44,26 @@ public:
         client_.set_close_handler(bind(&WebSocketReceiver::onClose, this, _1));
         client_.set_fail_handler(bind(&WebSocketReceiver::onFail, this, _1));
         client_.set_message_handler(bind(&WebSocketReceiver::onMessage, this, _1, _2));
+
+        // ping pong timer
+        timer_.periodic([this]() {
+            if (!isOpen_) {
+                return;
+            }
+            websocketpp::lib::error_code ec;
+            const auto pingMsg = handler_.genPingMessage();
+            client_.send(hdl_, pingMsg.dump(), websocketpp::frame::opcode::text, ec);
+            if (ec) {
+                logger_.error("Error ping message: {}", ec.message());
+                return;
+            }
+            logger_.info("ping Message: {}", pingMsg.dump());
+        }, 30 * 1000 * 1000);
     }
 
     ~WebSocketReceiver()
     {
+        timer_.stop();
         close(websocketpp::close::status::going_away);
         for (auto &thraed : wsThread_) {
             if (thraed.joinable()) {
@@ -53,13 +71,6 @@ public:
             }
         }
         wsThread_.clear();
-
-        for (auto &thraed : pingPongThread_) {
-            if (thraed.joinable()) {
-                thraed.join();
-            }
-        }
-        pingPongThread_.clear();
     }
 
     bool connect()
@@ -102,7 +113,7 @@ private:
         logger_.info("onOpen");
         isOpen_ = true;
         subscribe();
-        initPingPong();
+        timer_.start();
     }
 
     void onFail(websocketpp::connection_hdl)
@@ -141,23 +152,6 @@ private:
         }
     }
 
-    void initPingPong()
-    {
-        pingPongThread_.emplace_back([this]() {
-            while (isOpen_) {
-                std::this_thread::sleep_for(std::chrono::seconds(30));
-                websocketpp::lib::error_code ec;
-                const auto pingMsg = handler_.genPingMessage();
-                client_.send(hdl_, pingMsg.dump(), websocketpp::frame::opcode::text, ec);
-                if (ec) {
-                    logger_.error("Error ping message: {}", ec.message());
-                    return;
-                }
-                logger_.info("ping Message: {}", pingMsg.dump());
-            }
-        });
-    }
-
     context_ptr on_tls_init()
     {
         // establishes a SSL connection
@@ -178,7 +172,8 @@ private:
     client client_;
     websocketpp::connection_hdl hdl_;
     std::vector<std::thread> wsThread_;
-    std::vector<std::thread> pingPongThread_;
+    Util::Thread::Timer timer_;
+    
     HandlerType handler_;
     Util::Log::Logger logger_;
     bool isOpen_;
