@@ -7,7 +7,7 @@ enable_testing()
 set(QuantCrypto_INSTALL_DIR ${PROJECT_SOURCE_DIR})
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR})
 
-set(targets thirdparty Quote Trade Application Util)
+set(targets thirdparty Quote Trade Application Util Strategy)
 foreach(target ${targets})
   add_subdirectory(${target})
 endforeach(target)
