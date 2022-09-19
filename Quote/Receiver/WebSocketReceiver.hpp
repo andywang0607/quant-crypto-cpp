@@ -31,34 +31,39 @@ public:
         using websocketpp::lib::placeholders::_1;
         using websocketpp::lib::placeholders::_2;
 
-        // set logging policy if needed
-        client_.clear_access_channels(websocketpp::log::alevel::frame_header);
-        client_.clear_access_channels(websocketpp::log::alevel::frame_payload);
+        if (handler_.enabled()) {
+            // set logging policy if needed
+            client_.clear_access_channels(websocketpp::log::alevel::frame_header);
+            client_.clear_access_channels(websocketpp::log::alevel::frame_payload);
 
-        // Initialize ASIO
-        client_.init_asio();
-        client_.set_tls_init_handler(bind(&WebSocketReceiver::on_tls_init, this));
+            // Initialize ASIO
+            client_.init_asio();
+            client_.set_tls_init_handler(bind(&WebSocketReceiver::on_tls_init, this));
 
-        // Register our handlers
-        client_.set_open_handler(bind(&WebSocketReceiver::onOpen, this, _1));
-        client_.set_close_handler(bind(&WebSocketReceiver::onClose, this, _1));
-        client_.set_fail_handler(bind(&WebSocketReceiver::onFail, this, _1));
-        client_.set_message_handler(bind(&WebSocketReceiver::onMessage, this, _1, _2));
+            // Register our handlers
+            client_.set_open_handler(bind(&WebSocketReceiver::onOpen, this, _1));
+            client_.set_close_handler(bind(&WebSocketReceiver::onClose, this, _1));
+            client_.set_fail_handler(bind(&WebSocketReceiver::onFail, this, _1));
+            client_.set_message_handler(bind(&WebSocketReceiver::onMessage, this, _1, _2));
 
-        // ping pong timer
-        timer_.periodic([this]() {
-            if (!isOpen_) {
-                return;
-            }
-            websocketpp::lib::error_code ec;
-            const auto pingMsg = handler_.genPingMessage();
-            client_.send(hdl_, pingMsg.dump(), websocketpp::frame::opcode::text, ec);
-            if (ec) {
-                logger_.error("Error ping message: {}", ec.message());
-                return;
-            }
-            logger_.info("ping Message: {}", pingMsg.dump());
-        }, 30 * 1000 * 1000);
+            // ping pong timer
+            timer_.periodic([this]() {
+                if (!isOpen_) {
+                    return;
+                }
+                websocketpp::lib::error_code ec;
+                const auto pingMsg = handler_.genPingMessage();
+                client_.send(hdl_, pingMsg.dump(), websocketpp::frame::opcode::text, ec);
+                if (ec) {
+                    logger_.error("Error ping message: {}", ec.message());
+                    return;
+                }
+                logger_.info("ping Message: {}", pingMsg.dump());
+            },
+            30 * 1000 * 1000);
+
+            connect();
+        }
     }
 
     ~WebSocketReceiver()
@@ -73,6 +78,12 @@ public:
         wsThread_.clear();
     }
 
+    inline HandlerType &getHandler()
+    {
+        return handler_;
+    }
+
+private:
     bool connect()
     {
         try {
@@ -102,12 +113,6 @@ public:
         return true;
     }
 
-    inline HandlerType &getHandler()
-    {
-        return handler_;
-    }
-
-private:
     void onOpen(websocketpp::connection_hdl)
     {
         logger_.info("onOpen");

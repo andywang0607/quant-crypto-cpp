@@ -22,7 +22,7 @@ public:
     static inline const std::string Uri = "wss://stream.bybit.com/spot/quote/ws/v2";
 
     explicit BybitSpotQuoteHandler(const nlohmann::json &config)
-        : config_(config)
+        : config_(config["exchange"]["bybit"]["spot"])
         , logger_("BybitSpotQuote")
     {
     }
@@ -31,7 +31,7 @@ public:
     {
         std::vector<nlohmann::json> ret;
 
-        const auto &symbols = config_["exchange"]["bybit"]["symbol"];
+        const auto &symbols = config_["symbol"];
 
         for (const auto &symbol : symbols) {
             static nlohmann::json tradeReq;
@@ -53,7 +53,7 @@ public:
             ret.emplace_back(bookReq);
         }
 
-        const auto &klineType = config_["exchange"]["bybit"]["klineType"];
+        const auto &klineType = config_["klineType"];
         for (const auto &symbol : symbols) {
             for (const auto &type : klineType) {
                 static nlohmann::json klineReq;
@@ -120,6 +120,11 @@ public:
     {
         return {
             {"ping", 1535975085152}};
+    }
+
+    virtual bool enabled() override
+    {
+        return config_["enabled"].get<bool>();
     }
 
 private:

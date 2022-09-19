@@ -1,9 +1,24 @@
 {
     "exchange": {
-        "bybit" :{
-            "enabled": true,
-            "symbol":[""],
-            "klineType": ["1m"]
+        "bybit": {
+            "spot": {
+                "enabled": true,
+                "symbol": [
+                    ""
+                ],
+                "klineType": [
+                    "1m"
+                ]
+            },
+            "perpetual": {
+                "enabled": false,
+                "symbol": [
+                    ""
+                ],
+                "klineType": [
+                    "1m"
+                ]
+            }
         }
     },
     "QuoteReceiver": {

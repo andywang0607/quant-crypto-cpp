@@ -27,8 +27,6 @@ int main(int argc, char *argv[])
         tradeWritter->init(symbol, quote);
     });
 
-    bybitSpot.connect();
-
     while (true) {
     }
     return 0;

@@ -16,7 +16,8 @@ int main()
     bybitConfig["symbol"].push_back("BTCUSDT");
     bybitConfig["symbol"].push_back("ETHUSDT");
     bybitConfig["klineType"] = nlohmann::json::array({"1m", "1h"});
-    config["exchange"]["bybit"] = bybitConfig;
+    config["exchange"]["bybit"]["spot"] = bybitConfig;
+    config["exchange"]["bybit"]["perpetual"] = bybitConfig;
 
     QuoteApi::onNewBook.subscribe([](auto &book){
         static int count = 0;
@@ -47,15 +48,11 @@ int main()
         spdlog::info("BybitSpotQuoteAdapter NewSymbolEvent for Trade, symbol={}", symbol);
     });
 
-    bybitSpot.connect();
-
     BybitPerpetualQuoteAdapter bybitPerpetual(config);
 
     bybitPerpetual.addNewSymbolEvent<Trade>([](auto &symbol, auto &book){
         spdlog::info("BybitPerpetualQuoteAdapter NewSymbolEvent for Trade, symbol={}", symbol);
     });
-
-    bybitPerpetual.connect();
 
     while (true) {
     }
