@@ -23,7 +23,7 @@ public:
     static inline const std::string Uri = "wss://stream.bybit.com/realtime_public";
 
     explicit BybitPerpetualQuoteHandler(const nlohmann::json &config)
-        : config_(config)
+        : config_(config["exchange"]["bybit"]["perpetual"])
         , logger_("BybitPerpetualQuote")
     {
     }
@@ -32,7 +32,7 @@ public:
     {
         std::vector<nlohmann::json> ret;
 
-        const auto &symbols = config_["exchange"]["bybit"]["symbol"];
+        const auto &symbols = config_["symbol"];
 
         for (const auto &symbol : symbols) {
             static nlohmann::json infoReq;
@@ -109,6 +109,11 @@ public:
     {
         return {
             {"op", "ping"}};
+    }
+
+    virtual bool enabled() override
+    {
+        return config_["enabled"].get<bool>();
     }
 
 private:

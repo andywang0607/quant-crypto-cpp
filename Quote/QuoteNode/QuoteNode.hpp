@@ -62,6 +62,11 @@ public:
         }
     }
 
+    virtual bool enabled() 
+    {
+        return false;
+    }
+
     Util::Event::PublisherMap<std::string, MarketBook> marketBook_;
     Util::Event::PublisherMap<std::string, Trade> trade_;
     Util::Event::PublisherMap<std::string, Kline> kline_;
