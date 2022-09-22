@@ -72,11 +72,10 @@ public:
         if (topic.find("trade") != std::string::npos) {
             const auto &dataObj = jsonMsg["data"][0];
             const std::string &symbol = dataObj["symbol"].get<std::string>();
-            const std::string exchangeSymbol = symbol + ".BybitContract";
 
-            forQuoteData<Trade>(exchangeSymbol, dataObj, [this, exchangeSymbol](const nlohmann::json &json, auto &quote) {
+            forQuoteData<Trade>(symbol, ExchangeT::ByBit, dataObj, [this, symbol](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::Trade;
-                updateHeader(quote, json, exchangeSymbol, [&json]() {
+                updateHeader(quote, json, symbol, [&json]() {
                     return std::stoll(json["trade_time_ms"].get<std::string>());
                 });
                 updateTrade(quote, json);
@@ -91,11 +90,9 @@ public:
                 auto found = topic.find_last_of(".");
                 return topic.substr(found + 1);
             }();
-            const std::string exchangeSymbol = symbol + ".BybitContract";
-
-            forQuoteData<InstrumentInfo>(exchangeSymbol, jsonMsg, [this, &exchangeSymbol](const nlohmann::json &json, auto &quote) {
+            forQuoteData<InstrumentInfo>(symbol, ExchangeT::ByBit, jsonMsg, [this, &symbol](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::InstrumentInfo;
-                updateHeader(quote, json, exchangeSymbol, [&json]() {
+                updateHeader(quote, json, symbol, [&json]() {
                     return std::stoll(json["timestamp_e6"].get<std::string>()) / 1000.f;
                 });
                 updateInstrumentInfo(quote, json);

@@ -19,22 +19,22 @@ int main()
     config["exchange"]["bybit"]["spot"] = bybitConfig;
     config["exchange"]["bybit"]["perpetual"] = bybitConfig;
 
-    QuoteApi::onNewBook.subscribe([](auto &book){
+    QuoteApi::onNewBook.subscribe([](auto &, auto &book){
         static int count = 0;
         spdlog::info("bookCount={}", count++);
     });
 
-    QuoteApi::onNewTrade.subscribe([](auto &trade){
+    QuoteApi::onNewTrade.subscribe([](auto &, auto &trade){
         static int count = 0;
         spdlog::info("tradeCount={}", count++);
     });
 
-    QuoteApi::onNewKline.subscribe([](auto &trade){
+    QuoteApi::onNewKline.subscribe([](auto &, auto &trade){
         static int count = 0;
         spdlog::info("klineCount={}", count++);
     });
 
-    QuoteApi::onNewInstrumentInfo.subscribe([](auto &trade){
+    QuoteApi::onNewInstrumentInfo.subscribe([](auto &, auto &trade){
         static int count = 0;
         spdlog::info("InstrumentInfoCount={}", count++);
     });

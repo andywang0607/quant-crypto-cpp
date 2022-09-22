@@ -15,25 +15,28 @@ public:
     using MapType::begin;
     using MapType::end;
 
-    template <typename... Args>
+    template <bool Publish = true, typename... Args>
     auto emplace(Args &&... data)
     {
         auto ret = MapType::emplace(std::forward<Args>(data)...);
-        if (ret.second) {
-            topic_(ret.first->first, ret.first->second);
+        if constexpr (Publish) {
+            if (ret.second) {
+                topic_(ret.first->first, ret.first->second);
+            }
         }
 
         return ret;
     }
 
-    template <typename... Args>
+    template <bool Publish = true, typename... Args>
     auto try_emplace(Args &&... data)
     {
         auto ret = MapType::try_emplace(std::forward<Args>(data)...);
-        if (ret.second) {
-            topic_(ret.first->first, ret.first->second);
+        if constexpr (Publish) {
+            if (ret.second) {
+                topic_(ret.first->first, ret.first->second);
+            }
         }
-
         return ret;
     }
 
@@ -44,6 +47,13 @@ public:
             std::forward<F>(f)(pair.first, pair.second);
         });
         return topic_ += std::forward<F>(f);
+    }
+
+    auto publish()
+    {
+        std::for_each(begin(), end(), [this](auto &pair) {
+            topic_(pair.first, pair.second);
+        });
     }
 
 private:

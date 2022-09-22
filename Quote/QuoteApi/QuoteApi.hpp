@@ -9,10 +9,10 @@ namespace QuantCrypto::Quote {
 class QuoteApi
 {
 public:
-    static inline Util::Event::Topic<MarketBook &> onNewBook;
-    static inline Util::Event::Topic<Trade &> onNewTrade;
-    static inline Util::Event::Topic<Kline &> onNewKline;
-    static inline Util::Event::Topic<InstrumentInfo &> onNewInstrumentInfo;
+    static inline Util::Event::Topic<const ExchangeT &, MarketBook &> onNewBook;
+    static inline Util::Event::Topic<const ExchangeT &, Trade &> onNewTrade;
+    static inline Util::Event::Topic<const ExchangeT &, Kline &> onNewKline;
+    static inline Util::Event::Topic<const ExchangeT &, InstrumentInfo &> onNewInstrumentInfo;
 };
 }
 #endif // __QUOTEAPI_H__

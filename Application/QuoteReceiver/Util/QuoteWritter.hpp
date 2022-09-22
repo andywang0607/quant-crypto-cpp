@@ -31,12 +31,13 @@ public:
     {
         const std::string date = Util::Time::getDate();
         const std::string exchange = getExchange(quote);
+        const auto symbolWithExchange = symbol + "." + exchange;
 
         const std::string path = [&]() {
             if (root_.empty()) {
-                return getTypeFodlerName(quote) + "/" + exchange + "/" + symbol + "/" + date + ".txt";
+                return getTypeFodlerName(quote) + "/" + exchange + "/" + symbolWithExchange + "/" + date + ".txt";
             }
-            return root_ + "/" + getTypeFodlerName(quote) + "/" + exchange + "/" + symbol + "/" + date + ".txt";
+            return root_ + "/" + getTypeFodlerName(quote) + "/" + symbolWithExchange + "/" + date + ".txt";
         }();
         logger_.info("New file: {}", path);
 
@@ -49,7 +50,7 @@ public:
             auto &fileWriter = iter->second;
 
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::MarketBook>) {
-                QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&symbol, &fileWriter](auto &book) {
+                QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&symbol, &fileWriter](auto &exchange, auto &book) {
                     const auto receivedSymbol = book.header_.symbol_;
                     if (receivedSymbol != symbol) {
                         return;
@@ -58,7 +59,7 @@ public:
                 });
             }
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Trade>) {
-                QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&symbol, &fileWriter](auto &trade) {
+                QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&symbol, &fileWriter](auto &exchange, auto &trade) {
                     static int count = 0;
                     const auto receivedSymbol = trade.header_.symbol_;
                     if (receivedSymbol != symbol) {
