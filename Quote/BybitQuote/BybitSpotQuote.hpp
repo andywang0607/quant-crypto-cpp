@@ -82,12 +82,11 @@ public:
         const auto &topic = jsonMsg["topic"];
 
         const std::string &symbol = jsonMsg["params"]["symbol"].get<std::string>();
-        const std::string exchangeSymbol = symbol + ".Bybit";
 
         if (topic == "trade") {
-            forQuoteData<Trade>(exchangeSymbol, jsonMsg, [this, exchangeSymbol](const nlohmann::json &json, auto &quote) {
+            forQuoteData<Trade>(symbol, ExchangeT::ByBit, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::Trade;
-                updateHeader(quote, json, exchangeSymbol);
+                updateHeader(quote, json, symbol);
                 updateTrade(quote, json);
                 logger_.debug("[Trade] {}", quote.dump());
             });
@@ -95,9 +94,9 @@ public:
         }
 
         if (topic == "depth") {
-            forQuoteData<MarketBook>(exchangeSymbol, jsonMsg, [this, exchangeSymbol](const nlohmann::json &json, auto &quote) {
+            forQuoteData<MarketBook>(symbol, ExchangeT::ByBit, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::MarketBook;
-                updateHeader(quote, json, exchangeSymbol);
+                updateHeader(quote, json, symbol);
                 quote.clear();
                 updateBook(quote, json);
                 logger_.debug("[Book] {}", quote.dump());
@@ -106,9 +105,9 @@ public:
         }
 
         if (topic == "kline") {
-            forQuoteData<Kline>(exchangeSymbol, jsonMsg, [this, exchangeSymbol](const nlohmann::json &json, auto &quote) {
+            forQuoteData<Kline>(symbol, ExchangeT::ByBit, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::Kline;
-                updateHeader(quote, json, exchangeSymbol);
+                updateHeader(quote, json, symbol);
                 updateKline(quote, json);
                 logger_.debug("[Kline] {}", quote.dump());
             });

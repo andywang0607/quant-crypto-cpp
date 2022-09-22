@@ -17,31 +17,35 @@ public:
     ~QuoteNode() = default;
 
     template <typename QuoteType, typename MessageType, typename F, typename = std::enable_if_t<std::is_invocable_v<F, const MessageType &, QuoteType &>>>
-    void forQuoteData(const std::string &symbol, const MessageType &msg, F &&f)
+    void forQuoteData(const std::string &symbol, const ExchangeT &exchange, const MessageType &msg, F &&f)
     {
         if constexpr (std::is_same_v<QuoteType, MarketBook>) {
-            auto iter = marketBook_.try_emplace(symbol).first;
+            auto iter = marketBook_.try_emplace<false>(symbol).first;
             std::forward<F>(f)(msg, iter->second);
+            marketBook_.publish();
 
-            QuoteApi::onNewBook(iter->second);
+            QuoteApi::onNewBook(exchange, iter->second);
         }
         if constexpr (std::is_same_v<QuoteType, Trade>) {
-            auto iter = trade_.try_emplace(symbol).first;
+            auto iter = trade_.try_emplace<false>(symbol).first;
             std::forward<F>(f)(msg, iter->second);
+            trade_.publish();
 
-            QuoteApi::onNewTrade(iter->second);
+            QuoteApi::onNewTrade(exchange, iter->second);
         }
         if constexpr (std::is_same_v<QuoteType, Kline>) {
-            auto iter = kline_.try_emplace(symbol).first;
+            auto iter = kline_.try_emplace<false>(symbol).first;
             std::forward<F>(f)(msg, iter->second);
+            kline_.publish();
 
-            QuoteApi::onNewKline(iter->second);
+            QuoteApi::onNewKline(exchange, iter->second);
         }
         if constexpr (std::is_same_v<QuoteType, InstrumentInfo>) {
-            auto iter = instrumentInfo_.try_emplace(symbol).first;
+            auto iter = instrumentInfo_.try_emplace<false>(symbol).first;
             std::forward<F>(f)(msg, iter->second);
+            instrumentInfo_.publish();
 
-            QuoteApi::onNewInstrumentInfo(iter->second);
+            QuoteApi::onNewInstrumentInfo(exchange, iter->second);
         }
     }
 
