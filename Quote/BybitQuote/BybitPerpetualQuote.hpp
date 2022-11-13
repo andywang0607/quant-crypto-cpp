@@ -52,6 +52,15 @@ public:
             ret.emplace_back(tradeReq);
         }
 
+        for (const auto &symbol : symbols) {
+            static nlohmann::json bookReq;
+
+            bookReq["op"] = "subscribe";
+            bookReq["args"] = nlohmann::json::array({fmt::format("orderBookL2_25.{}", symbol)});
+
+            ret.emplace_back(bookReq);
+        }
+
         return ret;
     }
 
@@ -100,6 +109,23 @@ public:
             });
             return;
         }
+
+        if (topic.find("orderBookL2_25") != std::string::npos) {
+            const auto symbol = [&jsonMsg]() -> std::string {
+                const auto topic = jsonMsg["topic"].get<std::string>();
+                auto found = topic.find_last_of(".");
+                return topic.substr(found + 1);
+            }();
+            forQuoteData<MarketBook>(symbol, ExchangeT::ByBit, jsonMsg, [this, &symbol](const nlohmann::json &json, auto &quote) {
+                quote.header_.type_ = QuoteType::MarketBook;
+                updateHeader(quote, json, symbol, [&json]() {
+                    return std::stoll(json["timestamp_e6"].get<std::string>()) / 1000.f;
+                });
+                const auto isSnapshotBook = json["type"].get<std::string>() == "snapshot";
+                updateMarketBook(quote, json, isSnapshotBook);
+                logger_.debug("[MarketBook] {}", quote.dump());
+            });
+        }
     }
 
     nlohmann::json genPingMessage()
@@ -134,8 +160,8 @@ private:
 
     inline void updateInstrumentInfo(InstrumentInfo &quote, const nlohmann::json &json)
     {
-        const auto dataType = json["type"].get<std::string>();
-        if (dataType == "snapshot") {
+        const auto isSnapshot = json["type"].get<std::string>() == "snapshot";
+        if (isSnapshot) {
             const auto &dataObj = json["data"];
 
             quote.lastPrice_ = std::stod(dataObj["last_price"].get<std::string>());
@@ -162,35 +188,94 @@ private:
                 auto dateTimeStr = dataObj["next_funding_time"].get<std::string>();
                 return toTimestamp(dateTimeStr);
             }();
-        } else if (dataType == "delta") {
-            const auto &dataObj = json["data"]["update"][0];
-
-            quote.lastPrice_ = dataObj.contains("last_price") ? std::stod(dataObj["last_price"].get<std::string>()) : quote.lastPrice_;
-            quote.prevPrice24h_ = dataObj.contains("prev_price_24h") ? std::stod(dataObj["prev_price_24h"].get<std::string>()) : quote.prevPrice24h_;
-            quote.price24hPcnt_ = dataObj.contains("price_24h_pcnt_e6") ? std::stod(dataObj["price_24h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.price24hPcnt_;
-            quote.highestPrice24h_ = dataObj.contains("high_price_24h") ? std::stod(dataObj["high_price_24h"].get<std::string>()) : quote.highestPrice24h_;
-            quote.lowestPrice24h_ = dataObj.contains("low_price_24h") ? std::stod(dataObj["low_price_24h"].get<std::string>()) : quote.lowestPrice24h_;
-            quote.prevPrice1h_ = dataObj.contains("prev_price_1h") ? std::stod(dataObj["prev_price_1h"].get<std::string>()) : quote.prevPrice1h_;
-            quote.price1hPcnt_ = dataObj.contains("price_1h_pcnt_e6") ? std::stod(dataObj["price_1h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.price1hPcnt_;
-            quote.markPrice_ = dataObj.contains("mark_price") ? std::stod(dataObj["mark_price"].get<std::string>()) : quote.markPrice_;
-            quote.indexPrice_ = dataObj.contains("index_price") ? std::stod(dataObj["index_price"].get<std::string>()) : quote.indexPrice_;
-            quote.openInterest_ = dataObj.contains("open_interest_e8") ? std::stod(dataObj["open_interest_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.openInterest_;
-            quote.totalTurnover_ = dataObj.contains("total_turnover_e8") ? std::stod(dataObj["total_turnover_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.totalTurnover_;
-            quote.totalVolume_ = dataObj.contains("total_volume_e8") ? std::stod(dataObj["total_volume_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.totalVolume_;
-            quote.turnover24h_ = dataObj.contains("turnover_24h_e8") ? std::stod(dataObj["turnover_24h_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.turnover24h_;
-            quote.volume24h_ = dataObj.contains("volume_24h_e8") ? std::stod(dataObj["volume_24h_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.volume24h_;
-            quote.fundingRate_ = dataObj.contains("funding_rate_e6") ? std::stod(dataObj["funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.fundingRate_;
-            quote.predictFundingRate_ = dataObj.contains("predicted_funding_rate_e6") ? std::stod(dataObj["predicted_funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.predictFundingRate_;
-            quote.fundingRateInterval_ = dataObj.contains("funding_rate_interval") ? std::stod(dataObj["funding_rate_interval"].get<std::string>()) : quote.fundingRateInterval_;
-            quote.bestBidPrice_ = dataObj.contains("bid1_price") ? std::stod(dataObj["bid1_price"].get<std::string>()) : quote.bestBidPrice_;
-            quote.bestAskPrice_ = dataObj.contains("ask1_price") ? std::stod(dataObj["ask1_price"].get<std::string>()) : quote.bestAskPrice_;
-            quote.lastTickDirection_ = dataObj.contains("last_tick_direction") ? dataObj["last_tick_direction"].get<std::string>() : quote.lastTickDirection_;
-            quote.nextFundingTime_ = dataObj.contains("next_funding_time") ? [&dataObj]() {
-                auto dateTimeStr = dataObj["next_funding_time"].get<std::string>();
-                return toTimestamp(dateTimeStr);
-            }()
-                                                                           : quote.nextFundingTime_;
+        } else {
+            handleDelta(
+                quote, [](auto &) {},
+                [&dataObj = json["data"]["update"][0]](auto &quote) {
+                    quote.lastPrice_ = dataObj.contains("last_price") ? std::stod(dataObj["last_price"].get<std::string>()) : quote.lastPrice_;
+                    quote.prevPrice24h_ = dataObj.contains("prev_price_24h") ? std::stod(dataObj["prev_price_24h"].get<std::string>()) : quote.prevPrice24h_;
+                    quote.price24hPcnt_ = dataObj.contains("price_24h_pcnt_e6") ? std::stod(dataObj["price_24h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.price24hPcnt_;
+                    quote.highestPrice24h_ = dataObj.contains("high_price_24h") ? std::stod(dataObj["high_price_24h"].get<std::string>()) : quote.highestPrice24h_;
+                    quote.lowestPrice24h_ = dataObj.contains("low_price_24h") ? std::stod(dataObj["low_price_24h"].get<std::string>()) : quote.lowestPrice24h_;
+                    quote.prevPrice1h_ = dataObj.contains("prev_price_1h") ? std::stod(dataObj["prev_price_1h"].get<std::string>()) : quote.prevPrice1h_;
+                    quote.price1hPcnt_ = dataObj.contains("price_1h_pcnt_e6") ? std::stod(dataObj["price_1h_pcnt_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.price1hPcnt_;
+                    quote.markPrice_ = dataObj.contains("mark_price") ? std::stod(dataObj["mark_price"].get<std::string>()) : quote.markPrice_;
+                    quote.indexPrice_ = dataObj.contains("index_price") ? std::stod(dataObj["index_price"].get<std::string>()) : quote.indexPrice_;
+                    quote.openInterest_ = dataObj.contains("open_interest_e8") ? std::stod(dataObj["open_interest_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.openInterest_;
+                    quote.totalTurnover_ = dataObj.contains("total_turnover_e8") ? std::stod(dataObj["total_turnover_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.totalTurnover_;
+                    quote.totalVolume_ = dataObj.contains("total_volume_e8") ? std::stod(dataObj["total_volume_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.totalVolume_;
+                    quote.turnover24h_ = dataObj.contains("turnover_24h_e8") ? std::stod(dataObj["turnover_24h_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.turnover24h_;
+                    quote.volume24h_ = dataObj.contains("volume_24h_e8") ? std::stod(dataObj["volume_24h_e8"].get<std::string>()) / static_cast<double>(1e8) : quote.volume24h_;
+                    quote.fundingRate_ = dataObj.contains("funding_rate_e6") ? std::stod(dataObj["funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.fundingRate_;
+                    quote.predictFundingRate_ = dataObj.contains("predicted_funding_rate_e6") ? std::stod(dataObj["predicted_funding_rate_e6"].get<std::string>()) / static_cast<double>(1e6) : quote.predictFundingRate_;
+                    quote.fundingRateInterval_ = dataObj.contains("funding_rate_interval") ? std::stod(dataObj["funding_rate_interval"].get<std::string>()) : quote.fundingRateInterval_;
+                    quote.bestBidPrice_ = dataObj.contains("bid1_price") ? std::stod(dataObj["bid1_price"].get<std::string>()) : quote.bestBidPrice_;
+                    quote.bestAskPrice_ = dataObj.contains("ask1_price") ? std::stod(dataObj["ask1_price"].get<std::string>()) : quote.bestAskPrice_;
+                    quote.lastTickDirection_ = dataObj.contains("last_tick_direction") ? dataObj["last_tick_direction"].get<std::string>() : quote.lastTickDirection_;
+                    quote.nextFundingTime_ = dataObj.contains("next_funding_time") ? [&dataObj]() {
+                        auto dateTimeStr = dataObj["next_funding_time"].get<std::string>();
+                        return toTimestamp(dateTimeStr);
+                    }()
+                                                                                   : quote.nextFundingTime_;
+                },
+                [](auto &) {});
         }
+    }
+
+    inline void updateMarketBook(MarketBook &quote, const nlohmann::json &json, bool isSnapshot)
+    {
+        if (isSnapshot) {
+            quote.clear();
+            const auto &orders = json["data"]["order_book"];
+            for (const auto &order : orders) {
+                const bool isBuyer = order["side"].get<std::string>() == "Buy";
+                const auto price = std::stod(order["price"].get<std::string>());
+                const auto qty = order["size"].get<double>();
+                if (isBuyer) {
+                    quote.pushBid(price, qty);
+                } else {
+                    quote.pushAsk(price, qty);
+                }
+            }
+        } else {
+            handleDelta(
+                quote,
+                [&json = json["data"]["delete"]](auto &quote) {
+                    for (const auto &delObj : json) {
+                        if (delObj["side"].get<std::string>() == "Buy") {
+                            quote.deleteBid(stod(delObj["price"].get<std::string>()));
+                        } else {
+                            quote.deleteAsk(stod(delObj["price"].get<std::string>()));
+                        }
+                    }
+                },
+                [&json = json["data"]["update"]](auto &quote) {
+                    for (const auto &updateObj : json) {
+                        if (updateObj["side"].get<std::string>() == "Buy") {
+                            quote.updateBid(stod(updateObj["price"].get<std::string>()), updateObj["size"].get<double>());
+                        } else {
+                            quote.updateAsk(stod(updateObj["price"].get<std::string>()), updateObj["size"].get<double>());
+                        }
+                    }
+                },
+                [&json = json["data"]["insert"]](auto &quote) {
+                    for (const auto &insertObj : json) {
+                        if (insertObj["side"].get<std::string>() == "Buy") {
+                            quote.insertBid(stod(insertObj["price"].get<std::string>()), insertObj["size"].get<double>());
+                        } else {
+                            quote.insertAsk(stod(insertObj["price"].get<std::string>()), insertObj["size"].get<double>());
+                        }
+                    }
+                });
+        }
+    }
+
+    template <typename QuoteType, typename DeleteFunc, typename UpdateFunc, typename InsertFunc>
+    void handleDelta(QuoteType &quote, DeleteFunc &&deleteFun, UpdateFunc &&updateFun, InsertFunc &&insertFun)
+    {
+        std::forward<DeleteFunc>(deleteFun)(quote);
+        std::forward<UpdateFunc>(updateFun)(quote);
+        std::forward<InsertFunc>(insertFun)(quote);
     }
 
     inline bool isPong(const nlohmann::json &msg)
