@@ -118,6 +118,7 @@ private:
     inline void updateHeader(QuoteType &quote, const nlohmann::json &json, const std::string &symbol, GetSourceTime &&f)
     {
         quote.header_.source_ = ExchangeT::ByBit;
+        quote.header_.market_ = MarketT::USDTPerpetual;
         quote.header_.symbol_ = symbol;
         quote.header_.receivedTime_ = getTime();
         quote.header_.sourceTime_ = std::forward<GetSourceTime>(f)();

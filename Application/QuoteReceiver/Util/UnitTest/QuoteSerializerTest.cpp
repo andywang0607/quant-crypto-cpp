@@ -13,6 +13,7 @@ struct MockQuote
     {
         Header header;
         header.source_ = ExchangeT::ByBit;
+        header.market_ = MarketT::Spot;
         header.type_ = type;
         header.symbol_ = "ETHUSDT";
         header.sourceTime_ = 1111111111LL;
@@ -60,7 +61,7 @@ TEST(QuoteSerializerTest, Header)
     std::stringstream ss;
     ss << header;
 
-    const auto golden = "1111111111,22222222222,1,M,ETHUSDT";
+    const auto golden = "1111111111,22222222222,1,1,M,ETHUSDT";
 
     EXPECT_EQ(ss.str(), golden);
 };
@@ -82,7 +83,7 @@ TEST(QuoteSerializerTest, MarketBook)
     std::stringstream ss;
     ss << book;
 
-    const auto golden = "1111111111,22222222222,1,M,ETHUSDT,5,4,2000.22@100,2000.22@100,2000.22@100,2000.22@100,2000.22@100,2000.1@200,2000.1@200,2000.1@200,2000.1@200";
+    const auto golden = "1111111111,22222222222,1,1,M,ETHUSDT,5,4,2000.22@100,2000.22@100,2000.22@100,2000.22@100,2000.22@100,2000.1@200,2000.1@200,2000.1@200,2000.1@200";
 
     EXPECT_EQ(ss.str(), golden);
 };
@@ -93,7 +94,7 @@ TEST(QuoteSerializerTest, Trade)
     std::stringstream ss;
     ss << trade;
 
-    const auto golden = "1111111111,22222222222,1,T,ETHUSDT,tradeId,B,2000.123456@1000000000.123";
+    const auto golden = "1111111111,22222222222,1,1,T,ETHUSDT,tradeId,B,2000.123456@1000000000.123";
 
     EXPECT_EQ(ss.str(), golden);
 };

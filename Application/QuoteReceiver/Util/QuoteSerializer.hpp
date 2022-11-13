@@ -19,6 +19,7 @@ StreamType &operator<<(StreamType &s, const QuantCrypto::Quote::Header &header)
     s << header.sourceTime_ << ","
       << header.receivedTime_ << ","
       << toUnderlying(header.source_) << ","
+      << toUnderlying(header.market_) << ","
       << toUnderlying(header.type_) << ","
       << header.symbol_;
 

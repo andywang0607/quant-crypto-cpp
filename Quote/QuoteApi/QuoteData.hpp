@@ -22,9 +22,16 @@ enum class ExchangeT : char
     ByBit = '1',
 };
 
+enum class MarketT : char
+{
+    Spot = '1',
+    USDTPerpetual = '2',
+};
+
 struct Header
 {
     ExchangeT source_;
+    MarketT  market_;
     QuoteType type_;
     std::string symbol_;
     long long sourceTime_;
@@ -35,8 +42,8 @@ struct Header
 
     inline std::string dump()
     {
-        return fmt::format("source={}, type={}, symbol={}, sourceTime={}, receivedTime={}",
-                           source_, type_, symbol_, sourceTime_, receivedTime_);
+        return fmt::format("source={}, market={}, type={}, symbol={}, sourceTime={}, receivedTime={}",
+                           source_, market_, type_, symbol_, sourceTime_, receivedTime_);
     }
 };
 
