@@ -256,11 +256,12 @@ struct Kline
     double closed_;
     double opened_;
     double volume_;
+    double turnover_;
 
     inline std::string dump()
     {
-        return fmt::format("header={}, type={}, highest={}, lowest={}, closed={}, opened={}, volume={}",
-                           header_.dump(), type_, highest_, lowest_, closed_, opened_, volume_);
+        return fmt::format("header={}, type={}, highest={}, lowest={}, closed={}, opened={}, volume={} turnover={}",
+                           header_.dump(), type_, highest_, lowest_, closed_, opened_, volume_, turnover_);
     }
 };
 

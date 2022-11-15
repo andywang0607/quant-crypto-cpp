@@ -166,6 +166,9 @@ private:
         quote.closed_ = std::stod(json["data"]["c"].get<std::string>());
         quote.opened_ = std::stod(json["data"]["o"].get<std::string>());
         quote.volume_ = std::stod(json["data"]["v"].get<std::string>());
+        
+        // Not support
+        quote.turnover_ = -1.0;
     }
 
     nlohmann::json config_;

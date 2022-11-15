@@ -61,6 +61,19 @@ public:
             ret.emplace_back(bookReq);
         }
 
+        const auto &klineType = config_["klineType"];
+        for (const auto &symbol : symbols) {
+            static nlohmann::json klineReq;
+            for (const auto &type : klineType) {
+                static nlohmann::json klineReq;
+
+                klineReq["op"] = "subscribe";
+                klineReq["args"] = nlohmann::json::array({fmt::format("candle.{}.{}", type, symbol)});
+
+                ret.emplace_back(klineReq);
+            }
+        }
+
         return ret;
     }
 
@@ -125,6 +138,25 @@ public:
                 updateMarketBook(quote, json, isSnapshotBook);
                 logger_.debug("[MarketBook] {}", quote.dump());
             });
+            return;
+        }
+
+        if (topic.find("candle") != std::string::npos) {
+            const auto symbol = [&jsonMsg]() -> std::string {
+                const auto topic = jsonMsg["topic"].get<std::string>();
+                auto found = topic.find_last_of(".");
+                return topic.substr(found + 1);
+            }();
+
+            forQuoteData<Kline>(symbol, ExchangeT::ByBit, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
+                quote.header_.type_ = QuoteType::Kline;
+                updateHeader(quote, json, symbol, [&json]() {
+                    return json["timestamp_e6"].get<long long>() / 1000;
+                });
+                updateKline(quote, json);
+                logger_.debug("[Kline] {}", quote.dump());
+            });
+            return;
         }
     }
 
@@ -268,6 +300,23 @@ private:
                     }
                 });
         }
+    }
+
+    void updateKline(Kline &quote, const nlohmann::json &json)
+    {
+        const auto &klineArr = json["data"];
+        if (klineArr.empty()) {
+            return;
+        }
+        const auto &klineObj = klineArr[0];
+
+        quote.type_ = klineObj["period"].get<std::string>();
+        quote.highest_ = klineObj["high"].get<double>();
+        quote.lowest_ = klineObj["low"].get<double>();
+        quote.closed_ = klineObj["close"].get<double>();
+        quote.opened_ = klineObj["open"].get<double>();
+        quote.volume_ = std::stod(klineObj["volume"].get<std::string>());
+        quote.turnover_ = std::stod(klineObj["turnover"].get<std::string>());
     }
 
     template <typename QuoteType, typename DeleteFunc, typename UpdateFunc, typename InsertFunc>
