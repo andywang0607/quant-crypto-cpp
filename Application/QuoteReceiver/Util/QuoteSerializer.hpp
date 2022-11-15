@@ -72,6 +72,23 @@ StreamType &operator<<(StreamType &s, const QuantCrypto::Quote::Trade &trade)
     return s;
 }
 
+template <typename StreamType>
+StreamType &operator<<(StreamType &s, const QuantCrypto::Quote::Kline &kline)
+{
+    s << std::setprecision(15)
+      << std::noshowpoint
+      << kline.header_ << ","
+      << kline.type_ << ","
+      << kline.highest_ << ","
+      << kline.lowest_ << ","
+      << kline.closed_ << ","
+      << kline.opened_ << ","
+      << kline.volume_ << ","
+      << kline.turnover_;
+
+    return s;
+}
+
 } // namespace QuantCrypto::QuoteReceiver::Util
 
 #endif // __QUOTESERIALIZER_H__

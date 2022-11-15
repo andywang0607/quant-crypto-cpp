@@ -35,6 +35,14 @@ int main(int argc, char *argv[])
         tradeWritter->init(symbol, quote);
     });
 
+    auto klineWritter = std::make_shared<QuoteWritter<Kline>>(config);
+    bybitSpot.addNewSymbolEvent<Kline>([klineWritter](auto &symbol, auto &quote) {
+        klineWritter->init(symbol, quote);
+    });
+    bybitPerpetual.addNewSymbolEvent<Kline>([klineWritter](auto &symbol, auto &quote) {
+        klineWritter->init(symbol, quote);
+    });
+
     while (true) {
     }
     return 0;

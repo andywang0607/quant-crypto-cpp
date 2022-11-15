@@ -100,6 +100,20 @@ public:
                     }
                 });
             }
+            if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Kline>) {
+                QuantCrypto::Quote::QuoteApi::onNewKline.subscribe([&symbol, &fileWriter](auto &exchange, auto &kline) {
+                    static int count = 0;
+                    const auto receivedSymbol = kline.header_.symbol_;
+                    if (receivedSymbol != symbol) {
+                        return;
+                    }
+                    fileWriter << kline << "\n";
+                    if (count++ >= 5) {
+                        fileWriter.flush();
+                        count = 0;
+                    }
+                });
+            }
         } catch (std::exception &e) {
             logger_.error("exception: {}", e.what());
         }
@@ -113,6 +127,9 @@ private:
         }
         if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Trade>) {
             return "asciidata_trade";
+        }
+        if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Kline>) {
+            return "asciidata_kline";
         }
     }
 
