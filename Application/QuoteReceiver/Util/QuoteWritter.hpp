@@ -10,12 +10,39 @@
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <memory>
+#include <mutex>
 #include <type_traits>
 #include <unordered_map>
 
 #include <nlohmann/json.hpp>
 
 namespace QuantCrypto::QuoteReceiver::QuoteUtil {
+
+struct FileWriter
+{
+    template <typename... Args>
+    FileWriter(Args &&... args)
+        : ofstream_(std::forward<Args>(args)...)
+    {
+    }
+
+    template <typename DataType>
+    std::ofstream &operator<<(DataType &data)
+    {
+        std::lock_guard lk(mtx_);
+        ofstream_ << data;
+        return ofstream_;
+    }
+
+    void flush()
+    {
+        ofstream_.flush();
+    }
+
+    std::mutex mtx_;
+    std::ofstream ofstream_;
+};
 
 template <typename QuoteType>
 class QuoteWritter
@@ -44,8 +71,9 @@ public:
         try {
             std::string dirName = getDirname(path);
             std::filesystem::create_directories(dirName);
-
+            mapLock_.lock();
             auto iter = fileWriterMap_.try_emplace(symbol, path, std::ios_base::app).first;
+            mapLock_.unlock();
             auto &symbol = iter->first;
             auto &fileWriter = iter->second;
 
@@ -72,6 +100,20 @@ public:
                     }
                 });
             }
+            if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Kline>) {
+                QuantCrypto::Quote::QuoteApi::onNewKline.subscribe([&symbol, &fileWriter](auto &exchange, auto &kline) {
+                    static int count = 0;
+                    const auto receivedSymbol = kline.header_.symbol_;
+                    if (receivedSymbol != symbol) {
+                        return;
+                    }
+                    fileWriter << kline << "\n";
+                    if (count++ >= 5) {
+                        fileWriter.flush();
+                        count = 0;
+                    }
+                });
+            }
         } catch (std::exception &e) {
             logger_.error("exception: {}", e.what());
         }
@@ -85,6 +127,9 @@ private:
         }
         if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Trade>) {
             return "asciidata_trade";
+        }
+        if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Kline>) {
+            return "asciidata_kline";
         }
     }
 
@@ -102,7 +147,8 @@ private:
     }
 
     std::string root_;
-    std::unordered_map<std::string, std::ofstream> fileWriterMap_;
+    std::mutex mapLock_;
+    std::unordered_map<std::string, FileWriter> fileWriterMap_;
     Util::Log::Logger logger_;
 };
 } // namespace QuantCrypto::QuoteReceiver::QuoteUtil

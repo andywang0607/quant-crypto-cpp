@@ -19,6 +19,7 @@ StreamType &operator<<(StreamType &s, const QuantCrypto::Quote::Header &header)
     s << header.sourceTime_ << ","
       << header.receivedTime_ << ","
       << toUnderlying(header.source_) << ","
+      << toUnderlying(header.market_) << ","
       << toUnderlying(header.type_) << ","
       << header.symbol_;
 
@@ -67,6 +68,23 @@ StreamType &operator<<(StreamType &s, const QuantCrypto::Quote::Trade &trade)
       << trade.tradeId_ << ","
       << toUnderlying(trade.tradeType_) << ","
       << trade.price_ << "@" << trade.qty_;
+
+    return s;
+}
+
+template <typename StreamType>
+StreamType &operator<<(StreamType &s, const QuantCrypto::Quote::Kline &kline)
+{
+    s << std::setprecision(15)
+      << std::noshowpoint
+      << kline.header_ << ","
+      << kline.type_ << ","
+      << kline.highest_ << ","
+      << kline.lowest_ << ","
+      << kline.closed_ << ","
+      << kline.opened_ << ","
+      << kline.volume_ << ","
+      << kline.turnover_;
 
     return s;
 }

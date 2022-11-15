@@ -22,9 +22,16 @@ enum class ExchangeT : char
     ByBit = '1',
 };
 
+enum class MarketT : char
+{
+    Spot = '1',
+    USDTPerpetual = '2',
+};
+
 struct Header
 {
     ExchangeT source_;
+    MarketT  market_;
     QuoteType type_;
     std::string symbol_;
     long long sourceTime_;
@@ -35,8 +42,8 @@ struct Header
 
     inline std::string dump()
     {
-        return fmt::format("source={}, type={}, symbol={}, sourceTime={}, receivedTime={}",
-                           source_, type_, symbol_, sourceTime_, receivedTime_);
+        return fmt::format("source={}, market={}, type={}, symbol={}, sourceTime={}, receivedTime={}",
+                           source_, market_, type_, symbol_, sourceTime_, receivedTime_);
     }
 };
 
@@ -90,6 +97,88 @@ struct MarketBook
         askDepth_++;
     }
 
+    void insertBid(const double price, const double qty)
+    {
+        if (bidDepth_ >= MaxDepth) {
+            return;
+        }
+        for (int i = 0; i < bidDepth_; ++i) {
+            if (price > bids_[i].price_) {
+                continue;
+            }
+            memcpy(&bids_[i] + 1, &bids_[i], (bidDepth_ - i) * sizeof(Info));
+            bids_[i].price_ = price;
+            bids_[i].qty_ = qty;
+            ++bidDepth_;
+            return;
+        }
+        bids_[bidDepth_].price_ = price;
+        bids_[bidDepth_].qty_ = qty;
+        ++bidDepth_;
+    }
+
+    void insertAsk(const double price, const double qty)
+    {
+        if (askDepth_ >= MaxDepth) {
+            return;
+        }
+        for (int i = 0; i < askDepth_; ++i) {
+            if (price > asks_[i].price_) {
+                continue;
+            }
+            memcpy(&asks_[i] + 1, &asks_[i], (askDepth_ - i) * sizeof(Info));
+            asks_[i].price_ = price;
+            asks_[i].qty_ = qty;
+            ++askDepth_;
+            return;
+        }
+        asks_[askDepth_].price_ = price;
+        asks_[askDepth_].qty_ = qty;
+        ++askDepth_;
+    }
+
+    void updateBid(const double price, const double qty)
+    {
+        for (int i = 0; i < bidDepth_; ++i) {
+            if (bids_[i].price_ == price) {
+                bids_[i].qty_ = qty;
+                break;
+            }
+        }
+    }
+
+    void updateAsk(const double price, const double qty)
+    {
+        for (int i = 0; i < askDepth_; ++i) {
+            if (asks_[i].price_ == price) {
+                asks_[i].qty_ = qty;
+                break;
+            }
+        }
+    }
+
+    void deleteBid(const double price)
+    {
+        for (int i = 0; i < bidDepth_; ++i) {
+            if (bids_[i].price_ == price) {
+                memmove((void *)&bids_[i], (void *)&bids_[i + 1], (bidDepth_ - i - 1) * sizeof(Info));
+                --bidDepth_;
+                break;
+            }
+        }
+    }
+
+    void deleteAsk(const double price)
+    {
+        for (int i = 0; i < askDepth_; ++i) {
+            if (asks_[i].price_ == price) {
+                memmove((void *)&asks_[i], (void *)&asks_[i + 1], (askDepth_ - i - 1) * sizeof(Info));
+                --askDepth_;
+                break;
+            }
+        }
+    }
+
     void clear()
     {
         const int depth = bidDepth_ > askDepth_ ? bidDepth_ : askDepth_;
@@ -114,10 +203,10 @@ struct MarketBook
 
     inline std::string dump()
     {
-        return fmt::format("header={}, bidDepth={}, askDepth={}, bid={}, {}, {}, {}, {}, ask={}, {}, {}, {}, {}",
-                           header_.dump(), bidDepth_, askDepth_, 
-                           bids_[0].dump(), bids_[1].dump(), bids_[2].dump(), bids_[3].dump(), bids_[4].dump(),
-                           asks_[0].dump(), asks_[1].dump(), asks_[2].dump(), asks_[3].dump(), asks_[4].dump());
+        return fmt::format("header={}, bidDepth={}, askDepth={}, bid={}, {}, {}, {}, {}, {}, {}, {}, {}, {}, ask={}, {}, {}, {}, {}, {}, {}, {}, {}, {}",
+                           header_.dump(), bidDepth_, askDepth_,
+                           bids_[0].dump(), bids_[1].dump(), bids_[2].dump(), bids_[3].dump(), bids_[4].dump(), bids_[5].dump(), bids_[6].dump(), bids_[7].dump(), bids_[8].dump(), bids_[9].dump(),
+                           asks_[0].dump(), asks_[1].dump(), asks_[2].dump(), asks_[3].dump(), asks_[4].dump(), asks_[5].dump(), asks_[6].dump(), asks_[7].dump(), asks_[8].dump(), asks_[9].dump());
     }
 
     Header header_;
@@ -167,11 +256,12 @@ struct Kline
     double closed_;
     double opened_;
     double volume_;
+    double turnover_;
 
     inline std::string dump()
     {
-        return fmt::format("header={}, type={}, highest={}, lowest={}, closed={}, opened={}, volume={}",
-                           header_.dump(), type_, highest_, lowest_, closed_, opened_, volume_);
+        return fmt::format("header={}, type={}, highest={}, lowest={}, closed={}, opened={}, volume={} turnover={}",
+                           header_.dump(), type_, highest_, lowest_, closed_, opened_, volume_, turnover_);
     }
 };
 
