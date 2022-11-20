@@ -20,6 +20,7 @@ enum class QuoteType : char
 enum class ExchangeT : char
 {
     ByBit = '1',
+    Binance = '2',
 };
 
 enum class MarketT : char
