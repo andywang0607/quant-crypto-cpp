@@ -45,22 +45,25 @@ public:
             client_.set_close_handler(bind(&WebSocketReceiver::onClose, this, _1));
             client_.set_fail_handler(bind(&WebSocketReceiver::onFail, this, _1));
             client_.set_message_handler(bind(&WebSocketReceiver::onMessage, this, _1, _2));
+            client_.set_ping_handler(bind(&WebSocketReceiver::onPing, this, _1, _2));
 
             // ping pong timer
-            timer_.periodic([this]() {
-                if (!isOpen_) {
-                    return;
-                }
-                websocketpp::lib::error_code ec;
-                const auto pingMsg = handler_.genPingMessage();
-                client_.send(hdl_, pingMsg.dump(), websocketpp::frame::opcode::text, ec);
-                if (ec) {
-                    logger_.error("Error ping message: {}", ec.message());
-                    return;
-                }
-                logger_.info("ping Message: {}", pingMsg.dump());
-            },
-            30 * 1000 * 1000);
+            if constexpr (HandlerType::needPeriodicPing()) {
+                timer_.periodic([this]() {
+                    if (!isOpen_) {
+                        return;
+                    }
+                    websocketpp::lib::error_code ec;
+                    const auto pingMsg = handler_.genPingMessage();
+                    client_.send(hdl_, pingMsg.dump(), websocketpp::frame::opcode::text, ec);
+                    if (ec) {
+                        logger_.error("Error ping message: {}", ec.message());
+                        return;
+                    }
+                    logger_.info("ping Message: {}", pingMsg.dump());
+                },
+                                30 * 1000 * 1000);
+            }
 
             connect();
         }
@@ -124,6 +127,12 @@ private:
     void onFail(websocketpp::connection_hdl)
     {
         logger_.warn("onFail: Connection Failed");
+    }
+
+    bool onPing(websocketpp::connection_hdl, std::string payload)
+    {
+        logger_.info("onPing, payload={}", payload);
+        return true;
     }
 
     void onMessage(websocketpp::connection_hdl, message_ptr msg)

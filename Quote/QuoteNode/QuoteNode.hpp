@@ -20,32 +20,40 @@ public:
     void forQuoteData(const std::string &symbol, const ExchangeT &exchange, const MessageType &msg, F &&f)
     {
         if constexpr (std::is_same_v<QuoteType, MarketBook>) {
-            auto iter = marketBook_.try_emplace<false>(symbol).first;
-            std::forward<F>(f)(msg, iter->second);
-            marketBook_.publish();
+            auto iter = marketBook_.try_emplace<false>(symbol);
+            std::forward<F>(f)(msg, iter.first->second);
+            if (iter.second) {
+                marketBook_.publish();
+            }
 
-            QuoteApi::onNewBook(exchange, iter->second);
+            QuoteApi::onNewBook(exchange, iter.first->second);
         }
         if constexpr (std::is_same_v<QuoteType, Trade>) {
-            auto iter = trade_.try_emplace<false>(symbol).first;
-            std::forward<F>(f)(msg, iter->second);
-            trade_.publish();
-
-            QuoteApi::onNewTrade(exchange, iter->second);
+            auto iter = trade_.try_emplace<false>(symbol);
+            std::forward<F>(f)(msg, iter.first->second);
+            if (iter.second) {
+                trade_.publish();
+            }
+            
+            QuoteApi::onNewTrade(exchange, iter.first->second);
         }
         if constexpr (std::is_same_v<QuoteType, Kline>) {
-            auto iter = kline_.try_emplace<false>(symbol).first;
-            std::forward<F>(f)(msg, iter->second);
-            kline_.publish();
+            auto iter = kline_.try_emplace<false>(symbol);
+            std::forward<F>(f)(msg, iter.first->second);
+            if (iter.second) {
+                kline_.publish();
+            }
 
-            QuoteApi::onNewKline(exchange, iter->second);
+            QuoteApi::onNewKline(exchange, iter.first->second);
         }
         if constexpr (std::is_same_v<QuoteType, InstrumentInfo>) {
-            auto iter = instrumentInfo_.try_emplace<false>(symbol).first;
-            std::forward<F>(f)(msg, iter->second);
-            instrumentInfo_.publish();
+            auto iter = instrumentInfo_.try_emplace<false>(symbol);
+            std::forward<F>(f)(msg, iter.first->second);
+            if (iter.second) {
+                instrumentInfo_.publish();
+            }
 
-            QuoteApi::onNewInstrumentInfo(exchange, iter->second);
+            QuoteApi::onNewInstrumentInfo(exchange, iter.first->second);
         }
     }
 

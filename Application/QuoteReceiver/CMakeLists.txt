@@ -1,6 +1,6 @@
 add_executable(QuoteReceiver main.cpp)
 
-target_link_libraries(QuoteReceiver PRIVATE BybitQuote QuoteReceiver-Util)
+target_link_libraries(QuoteReceiver PRIVATE BybitQuote BinanceQuote QuoteReceiver-Util)
 
 install(
   TARGETS QuoteReceiver

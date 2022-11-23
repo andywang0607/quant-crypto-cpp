@@ -115,6 +115,11 @@ public:
         }
     }
 
+    static constexpr bool needPeriodicPing()
+    {
+        return true;
+    }
+
     nlohmann::json genPingMessage()
     {
         return {

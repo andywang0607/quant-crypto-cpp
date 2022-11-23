@@ -1,11 +1,11 @@
 #ifndef __QUOTEWRITTER_H__
 #define __QUOTEWRITTER_H__
 
+#include "Logger.hpp"
 #include "QuoteApi.hpp"
 #include "QuoteData.hpp"
 #include "QuoteSerializer.hpp"
 #include "TimeUtils.hpp"
-#include "Logger.hpp"
 
 #include <exception>
 #include <filesystem>
@@ -54,43 +54,58 @@ public:
     {
     }
 
-    void init(const std::string &symbol, const QuoteType &quote)
+    void init(const std::string &symbol, const QuantCrypto::Quote::ExchangeT &exchange, const QuantCrypto::Quote::MarketT &market)
     {
         const std::string date = Util::Time::getDate();
-        const std::string exchange = getExchange(quote);
-        const auto symbolWithExchange = symbol + "." + exchange;
+        const std::string exchangeName = getExchange(exchange);
+        const auto symbolWithExchange = symbol + "." + exchangeName;
 
         const std::string path = [&]() {
+            std::string fileName = getTypeFodlerName() + "/" + exchangeName + "/" + symbolWithExchange + "/" + date + ".txt";
             if (root_.empty()) {
-                return getTypeFodlerName(quote) + "/" + exchange + "/" + symbolWithExchange + "/" + date + ".txt";
+                return fileName;
             }
-            return root_ + "/" + getTypeFodlerName(quote) + "/" + symbolWithExchange + "/" + date + ".txt";
+            return root_ + "/" + fileName;
         }();
-        logger_.info("New file: {}", path);
 
         try {
             std::string dirName = getDirname(path);
             std::filesystem::create_directories(dirName);
-            mapLock_.lock();
-            auto iter = fileWriterMap_.try_emplace(symbol, path, std::ios_base::app).first;
-            mapLock_.unlock();
-            auto &symbol = iter->first;
-            auto &fileWriter = iter->second;
+            std::lock_guard lk(mapLock_);
+            auto &symbolWriterMap = fileWriterMap_[exchange];
+            auto iter = symbolWriterMap.try_emplace(symbol, path, std::ios_base::app);
+            if (!iter.second) {
+                logger_.info("Already init, symbol={}, exchange={}, market={}", symbol, exchangeName, market);
+                return;
+            }
+            logger_.info("New file: {}", path);
+            auto &symbol = iter.first->first;
+            auto &fileWriter = iter.first->second;
 
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::MarketBook>) {
-                QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&symbol, &fileWriter](auto &exchange, auto &book) {
-                    const auto receivedSymbol = book.header_.symbol_;
-                    if (receivedSymbol != symbol) {
+                QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange, initMarket = market](auto &exchange, auto &book) {
+                    if (exchange != initExchange) {
+                        return;
+                    }
+                    if (book.header_.market_ != initMarket) {
+                        return;
+                    }
+                    if (book.header_.symbol_ != initSymbol) {
                         return;
                     }
                     fileWriter << book << "\n";
                 });
             }
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Trade>) {
-                QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&symbol, &fileWriter](auto &exchange, auto &trade) {
+                QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange, initMarket = market](auto &exchange, auto &trade) {
                     static int count = 0;
-                    const auto receivedSymbol = trade.header_.symbol_;
-                    if (receivedSymbol != symbol) {
+                    if (exchange != initExchange) {
+                        return;
+                    }
+                    if (trade.header_.market_ != initMarket) {
+                        return;
+                    }
+                    if (trade.header_.symbol_ != initSymbol) {
                         return;
                     }
                     fileWriter << trade << "\n";
@@ -101,10 +116,15 @@ public:
                 });
             }
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Kline>) {
-                QuantCrypto::Quote::QuoteApi::onNewKline.subscribe([&symbol, &fileWriter](auto &exchange, auto &kline) {
+                QuantCrypto::Quote::QuoteApi::onNewKline.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange, initMarket = market](auto &exchange, auto &kline) {
                     static int count = 0;
-                    const auto receivedSymbol = kline.header_.symbol_;
-                    if (receivedSymbol != symbol) {
+                    if (exchange != initExchange) {
+                        return;
+                    }
+                    if (kline.header_.market_ != initMarket) {
+                        return;
+                    }
+                    if (kline.header_.symbol_ != initSymbol) {
                         return;
                     }
                     fileWriter << kline << "\n";
@@ -120,7 +140,7 @@ public:
     }
 
 private:
-    constexpr std::string getTypeFodlerName(const QuoteType &quote)
+    constexpr std::string getTypeFodlerName()
     {
         if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::MarketBook>) {
             return "asciidata_book";
@@ -138,17 +158,21 @@ private:
         return std::filesystem::path(path).parent_path();
     }
 
-    std::string getExchange(const QuoteType &quote)
+    std::string getExchange(const QuantCrypto::Quote::ExchangeT &exchange)
     {
-        if (quote.header_.source_ == QuantCrypto::Quote::ExchangeT::ByBit) {
+        if (exchange == QuantCrypto::Quote::ExchangeT::ByBit) {
             return "Bybit";
+        }
+        if (exchange == QuantCrypto::Quote::ExchangeT::Binance) {
+            return "Binance";
         }
         return "";
     }
 
     std::string root_;
     std::mutex mapLock_;
-    std::unordered_map<std::string, FileWriter> fileWriterMap_;
+    using SymbolWriterMap = std::unordered_map<std::string, FileWriter>;
+    std::unordered_map<QuantCrypto::Quote::ExchangeT, SymbolWriterMap> fileWriterMap_;
     Util::Log::Logger logger_;
 };
 } // namespace QuantCrypto::QuoteReceiver::QuoteUtil
