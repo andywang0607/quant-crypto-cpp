@@ -32,7 +32,7 @@ enum class MarketT : char
 struct Header
 {
     ExchangeT source_;
-    MarketT  market_;
+    MarketT market_;
     QuoteType type_;
     std::string symbol_;
     long long sourceTime_;
@@ -41,7 +41,7 @@ struct Header
     Header() = default;
     ~Header() = default;
 
-    inline std::string dump()
+    inline std::string dump() const
     {
         return fmt::format("source={}, market={}, type={}, symbol={}, sourceTime={}, receivedTime={}",
                            source_, market_, type_, symbol_, sourceTime_, receivedTime_);
@@ -57,7 +57,7 @@ struct Info
     {
     }
 
-    inline std::string dump()
+    inline std::string dump() const
     {
         return fmt::format("({}, {})",
                            price_, qty_);
@@ -202,7 +202,7 @@ struct MarketBook
         return bids_[index];
     }
 
-    inline std::string dump()
+    inline std::string dump() const
     {
         return fmt::format("header={}, bidDepth={}, askDepth={}, bid={}, {}, {}, {}, {}, {}, {}, {}, {}, {}, ask={}, {}, {}, {}, {}, {}, {}, {}, {}, {}",
                            header_.dump(), bidDepth_, askDepth_,
@@ -236,7 +236,7 @@ struct Trade
     double price_;
     double qty_;
 
-    inline std::string dump()
+    inline std::string dump() const
     {
         return fmt::format("header={}, tradeId_={}, tradeType_={}, price_={}, qty_={}",
                            header_.dump(), tradeId_, tradeType_, price_, qty_);
@@ -259,7 +259,7 @@ struct Kline
     double volume_;
     double turnover_;
 
-    inline std::string dump()
+    inline std::string dump() const
     {
         return fmt::format("header={}, type={}, highest={}, lowest={}, closed={}, opened={}, volume={} turnover={}",
                            header_.dump(), type_, highest_, lowest_, closed_, opened_, volume_, turnover_);
@@ -302,7 +302,7 @@ struct InstrumentInfo
 
     std::string lastTickDirection_;
 
-    inline std::string dump()
+    inline std::string dump() const
     {
         return fmt::format(
             "header={},"

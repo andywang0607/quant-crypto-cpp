@@ -1,11 +1,11 @@
 #ifndef __QUOTEWRITTER_H__
 #define __QUOTEWRITTER_H__
 
+#include "Logger.hpp"
 #include "QuoteApi.hpp"
 #include "QuoteData.hpp"
 #include "QuoteSerializer.hpp"
 #include "TimeUtils.hpp"
-#include "Logger.hpp"
 
 #include <exception>
 #include <filesystem>
@@ -54,58 +54,58 @@ public:
     {
     }
 
-    void init(const std::string &symbol, const QuoteType &quote)
+    void init(const std::string &symbol, const QuantCrypto::Quote::ExchangeT &exchange, const QuantCrypto::Quote::MarketT &market)
     {
         const std::string date = Util::Time::getDate();
-        const std::string exchange = getExchange(quote);
-        const auto symbolWithExchange = symbol + "." + exchange;
+        const std::string exchangeName = getExchange(exchange);
+        const auto symbolWithExchange = symbol + "." + exchangeName;
 
         const std::string path = [&]() {
+            std::string fileName = getTypeFodlerName() + "/" + exchangeName + "/" + symbolWithExchange + "/" + date + ".txt";
             if (root_.empty()) {
-                return getTypeFodlerName(quote) + "/" + exchange + "/" + symbolWithExchange + "/" + date + ".txt";
+                return fileName;
             }
-            return root_ + "/" + getTypeFodlerName(quote) + "/" + symbolWithExchange + "/" + date + ".txt";
+            return root_ + "/" + fileName;
         }();
 
         try {
             std::string dirName = getDirname(path);
             std::filesystem::create_directories(dirName);
-            mapLock_.lock();
-            auto &symbolWriterMap = fileWriterMap_[quote.header_.source_];
+            std::lock_guard lk(mapLock_);
+            auto &symbolWriterMap = fileWriterMap_[exchange];
             auto iter = symbolWriterMap.try_emplace(symbol, path, std::ios_base::app);
-            if (iter.second) {
-                logger_.info("New file: {}", path);
+            if (!iter.second) {
+                logger_.info("Already init, symbol={}, exchange={}, market={}", symbol, exchangeName, market);
+                return;
             }
-            mapLock_.unlock();
+            logger_.info("New file: {}", path);
             auto &symbol = iter.first->first;
             auto &fileWriter = iter.first->second;
 
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::MarketBook>) {
-                QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&symbol, &fileWriter, initExchange = quote.header_.source_, initMarket = quote.header_.market_](auto &exchange, auto &book) {
-                    const auto receivedSymbol = book.header_.symbol_;
-                    if(exchange != initExchange) {
+                QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange, initMarket = market](auto &exchange, auto &book) {
+                    if (exchange != initExchange) {
                         return;
                     }
                     if (book.header_.market_ != initMarket) {
                         return;
                     }
-                    if (receivedSymbol != symbol) {
+                    if (book.header_.symbol_ != initSymbol) {
                         return;
                     }
                     fileWriter << book << "\n";
                 });
             }
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Trade>) {
-                QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&symbol, &fileWriter, initExchange = quote.header_.source_, initMarket = quote.header_.market_](auto &exchange, auto &trade) {
+                QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange, initMarket = market](auto &exchange, auto &trade) {
                     static int count = 0;
-                    const auto receivedSymbol = trade.header_.symbol_;
-                    if(exchange != initExchange) {
+                    if (exchange != initExchange) {
                         return;
                     }
                     if (trade.header_.market_ != initMarket) {
                         return;
                     }
-                    if (receivedSymbol != symbol) {
+                    if (trade.header_.symbol_ != initSymbol) {
                         return;
                     }
                     fileWriter << trade << "\n";
@@ -116,16 +116,15 @@ public:
                 });
             }
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Kline>) {
-                QuantCrypto::Quote::QuoteApi::onNewKline.subscribe([&symbol, &fileWriter, initExchange = quote.header_.source_, initMarket = quote.header_.market_](auto &exchange, auto &kline) {
+                QuantCrypto::Quote::QuoteApi::onNewKline.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange, initMarket = market](auto &exchange, auto &kline) {
                     static int count = 0;
-                    const auto receivedSymbol = kline.header_.symbol_;
-                    if(exchange != initExchange) {
+                    if (exchange != initExchange) {
                         return;
                     }
                     if (kline.header_.market_ != initMarket) {
                         return;
                     }
-                    if (receivedSymbol != symbol) {
+                    if (kline.header_.symbol_ != initSymbol) {
                         return;
                     }
                     fileWriter << kline << "\n";
@@ -141,7 +140,7 @@ public:
     }
 
 private:
-    constexpr std::string getTypeFodlerName(const QuoteType &quote)
+    constexpr std::string getTypeFodlerName()
     {
         if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::MarketBook>) {
             return "asciidata_book";
@@ -159,12 +158,12 @@ private:
         return std::filesystem::path(path).parent_path();
     }
 
-    std::string getExchange(const QuoteType &quote)
+    std::string getExchange(const QuantCrypto::Quote::ExchangeT &exchange)
     {
-        if (quote.header_.source_ == QuantCrypto::Quote::ExchangeT::ByBit) {
+        if (exchange == QuantCrypto::Quote::ExchangeT::ByBit) {
             return "Bybit";
         }
-        if (quote.header_.source_ == QuantCrypto::Quote::ExchangeT::Binance) {
+        if (exchange == QuantCrypto::Quote::ExchangeT::Binance) {
             return "Binance";
         }
         return "";
