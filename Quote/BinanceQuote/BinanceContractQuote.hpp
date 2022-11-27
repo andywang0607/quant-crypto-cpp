@@ -1,11 +1,11 @@
-#ifndef __BINANCESPOTQUOTE_H__
-#define __BINANCESPOTQUOTE_H__
+#ifndef __BINANCECONTRACTQUOTE_H__
+#define __BINANCECONTRACTQUOTE_H__
 
+#include "QuoteAdapter.hpp"
 #include "QuoteData.hpp"
 #include "QuoteNode.hpp"
-#include "QuoteAdapter.hpp"
-#include "TimeUtils.hpp"
 #include "StringUtil.hpp"
+#include "TimeUtils.hpp"
 
 #include <cstddef>
 #include <string>
@@ -15,61 +15,68 @@
 #include <restclient-cpp/restclient.h>
 
 using namespace Util::Time;
-using namespace Util::StringUtil;
 
 namespace QuantCrypto::Quote {
 
-class BinanceSpotQuoteHandler : public QuoteNode
+class BinanceContractQuoteHandler : public QuoteNode
 {
 public:
-    static inline const std::string Uri = "wss://stream.binance.com:443/ws";
+    static inline const std::string Uri = "wss://fstream.binance.com/ws";
 
-    explicit BinanceSpotQuoteHandler(const nlohmann::json &config)
-        : config_(config["exchange"]["binance"]["spot"])
-        , logger_("BinanceSpotQuote")
+    explicit BinanceContractQuoteHandler(const nlohmann::json &config)
+        : config_(config["exchange"]["binance"]["contract"])
+        , logger_("BinanceContractQuote")
     {
     }
 
     std::vector<nlohmann::json> genSubscribeMsg()
     {
-        static const std::vector<std::string> Streams{"aggTrade", "depth@100ms", "kline"};
-
         std::vector<nlohmann::json> ret;
 
         const auto &symbols = config_["symbol"];
         static nlohmann::json req{
             {"method", "SUBSCRIBE"},
-            {"id", 19940607}, // My birthday :)
+            {"id", 607},
         };
 
         auto params = nlohmann::json::array();
-        for (const auto &stream : Streams) {
-            if (stream == "kline") {
-                const auto &klineTypes = config_["klineType"];
-                for (const auto &klineType : klineTypes) {
-                    for (const auto &symbol : symbols) {
-                        std::string streamName = "";
-                        std::string symbolStr = symbol.get<std::string>();
-                        toLowerCase(symbolStr);
-                        streamName += symbolStr;
-                        streamName += "@";
-                        streamName += "kline_";
-                        streamName += klineType.get<std::string>();
-                        params.emplace_back(streamName);
-                    }
-                }
-                continue;
-            }
+        // Subscribe kline
+        const auto &klineTypes = config_["klineType"];
+        for (const auto &klineType : klineTypes) {
             for (const auto &symbol : symbols) {
                 std::string streamName = "";
                 std::string symbolStr = symbol.get<std::string>();
                 toLowerCase(symbolStr);
                 streamName += symbolStr;
                 streamName += "@";
-                streamName += stream;
+                streamName += "kline_";
+                streamName += klineType.get<std::string>();
                 params.emplace_back(streamName);
             }
         }
+
+        // Subscribe trade
+        for (const auto &symbol : symbols) {
+            std::string streamName = "";
+            std::string symbolStr = symbol.get<std::string>();
+            toLowerCase(symbolStr);
+            streamName += symbolStr;
+            streamName += "@";
+            streamName += "aggTrade";
+            params.emplace_back(streamName);
+        }
+
+        // Subscribe Book
+        for (const auto &symbol : symbols) {
+            std::string streamName = "";
+            std::string symbolStr = symbol.get<std::string>();
+            toLowerCase(symbolStr);
+            streamName += symbolStr;
+            streamName += "@";
+            streamName += "depth@100ms";
+            params.emplace_back(streamName);
+        }
+
         req["params"] = params;
         ret.emplace_back(req);
         return ret;
@@ -101,7 +108,7 @@ public:
             });
             return;
         }
-        if(topic == "depthUpdate") {
+        if (topic == "depthUpdate") {
             if (!symbolBookInitInfoMap_.count(symbol)) {
                 querySnapshotBook(symbol);
             }
@@ -135,17 +142,15 @@ private:
     inline void updateHeader(QuoteType &quote, const nlohmann::json &json, const std::string &symbol)
     {
         quote.header_.source_ = ExchangeT::Binance;
-        quote.header_.market_ = MarketT::Spot;
+        quote.header_.market_ = MarketT::USDTPerpetual;
         quote.header_.symbol_ = symbol;
         quote.header_.receivedTime_ = getTime();
-        if (json.contains("E")) { // snapshot book from api do not contains "E"
-            quote.header_.sourceTime_ = json["E"].get<long long>();
-        }
+        quote.header_.sourceTime_ = json["E"].get<long long>();
     }
 
     inline void updateTrade(Trade &quote, const nlohmann::json &json)
     {
-        quote.tradeId_ = std::to_string(json["a"].get<long long>());  // Aggregate trade ID
+        quote.tradeId_ = std::to_string(json["a"].get<long long>()); // Aggregate trade ID
         quote.tradeType_ = json["m"].get<bool>() ? TradeType::Buyer : TradeType::Seller;
         quote.price_ = std::stod(json["p"].get<std::string>());
         quote.qty_ = std::stod(json["q"].get<std::string>());
@@ -175,7 +180,7 @@ private:
         if (isFirstDiffBook) {
             const auto firstUpdateId = json["U"].get<long long>();
             const auto finalUpdateId = json["u"].get<long long>();
-            if (firstUpdateId > lastUpdateId ) {
+            if (firstUpdateId > lastUpdateId) {
                 logger_.warn("invalid first diff book, firstUpdateId > lastUpdateId, symbol={}, lastUpdateId={}, firstUpdateId={}", symbol, lastUpdateId, firstUpdateId);
                 return false;
             }
@@ -201,7 +206,7 @@ private:
         for (const auto &bid : bidArr) {
             const auto price = std::stod(bid[0].get<std::string>());
             const auto qty = std::stod(bid[1].get<std::string>());
-            if(qty == 0) {
+            if (qty == 0) {
                 quote.deleteBid(price);
                 continue;
             }
@@ -226,7 +231,7 @@ private:
 
     inline bool querySnapshotBook(const std::string &symbol, int limit = 100)
     {
-        std::string url = fmt::format("https://api.binance.com/api/v3/depth?symbol={}&limit={}", symbol, limit);
+        std::string url = fmt::format("https://fapi.binance.com/fapi/v1/depth?symbol={}&limit={}", symbol, limit);
         RestClient::Response r = RestClient::get(url);
         if (r.code != 200) {
             logger_.warn("querySnapshotBook failed, request={} r.code={}, r.body={}", url, r.code, r.body);
@@ -246,13 +251,13 @@ private:
 
     inline void updateKline(Kline &quote, const nlohmann::json &json)
     {
-        quote.type_ = json["k"]["i"].get<std::string>();    // Interval
+        quote.type_ = json["k"]["i"].get<std::string>(); // Interval
         quote.highest_ = std::stod(json["k"]["h"].get<std::string>());
         quote.lowest_ = std::stod(json["k"]["l"].get<std::string>());
         quote.closed_ = std::stod(json["k"]["c"].get<std::string>());
         quote.opened_ = std::stod(json["k"]["o"].get<std::string>());
         quote.volume_ = std::stod(json["k"]["v"].get<std::string>());
-        
+
         // Not support
         quote.turnover_ = -1.0;
     }
@@ -266,9 +271,6 @@ private:
     };
     std::unordered_map<std::string, SymbolBookInitInfo> symbolBookInitInfoMap_;
 };
-
-using BinanceSpotQuoteAdapter = QuoteAdapter<BinanceSpotQuoteHandler>;
-
-
+using BinanceContractQuoteAdapter = QuoteAdapter<BinanceContractQuoteHandler>;
 } // namespace QuantCrypto::Quote
-#endif // __BINANCESPOTQUOTE_H__
+#endif // __BINANCECONTRACTQUOTE_H__

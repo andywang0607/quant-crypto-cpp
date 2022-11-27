@@ -1,4 +1,5 @@
 #include "BinanceSpotQuote.hpp"
+#include "BinanceContractQuote.hpp"
 #include <iostream>
 
 #include <nlohmann/json.hpp>
@@ -16,10 +17,10 @@ int main()
     bybitConfig["symbol"].push_back("ETHUSDT");
     bybitConfig["klineType"] = nlohmann::json::array({"1m", "1h"});
     config["exchange"]["binance"]["spot"] = bybitConfig;
-
+    config["exchange"]["binance"]["contract"] = bybitConfig;
 
     BinanceSpotQuoteAdapter binanceSpot(config);
-
+    BinanceContractQuoteAdapter binanceContract(config);
 
     while (true) {
     }

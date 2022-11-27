@@ -54,7 +54,7 @@ public:
     {
     }
 
-    void init(const std::string &symbol, const QuantCrypto::Quote::ExchangeT &exchange, const QuantCrypto::Quote::MarketT &market)
+    void init(const std::string &symbol, const QuantCrypto::Quote::ExchangeT &exchange)
     {
         const std::string date = Util::Time::getDate();
         const std::string exchangeName = getExchange(exchange);
@@ -75,7 +75,7 @@ public:
             auto &symbolWriterMap = fileWriterMap_[exchange];
             auto iter = symbolWriterMap.try_emplace(symbol, path, std::ios_base::app);
             if (!iter.second) {
-                logger_.info("Already init, symbol={}, exchange={}, market={}", symbol, exchangeName, market);
+                logger_.info("Already init, symbol={}, exchange={}", symbol, exchangeName);
                 return;
             }
             logger_.info("New file: {}", path);
@@ -83,11 +83,8 @@ public:
             auto &fileWriter = iter.first->second;
 
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::MarketBook>) {
-                QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange, initMarket = market](auto &exchange, auto &book) {
+                QuantCrypto::Quote::QuoteApi::onNewBook.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange](auto &exchange, auto &book) {
                     if (exchange != initExchange) {
-                        return;
-                    }
-                    if (book.header_.market_ != initMarket) {
                         return;
                     }
                     if (book.header_.symbol_ != initSymbol) {
@@ -97,12 +94,9 @@ public:
                 });
             }
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Trade>) {
-                QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange, initMarket = market](auto &exchange, auto &trade) {
+                QuantCrypto::Quote::QuoteApi::onNewTrade.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange](auto &exchange, auto &trade) {
                     static int count = 0;
                     if (exchange != initExchange) {
-                        return;
-                    }
-                    if (trade.header_.market_ != initMarket) {
                         return;
                     }
                     if (trade.header_.symbol_ != initSymbol) {
@@ -116,12 +110,9 @@ public:
                 });
             }
             if constexpr (std::is_same_v<QuoteType, QuantCrypto::Quote::Kline>) {
-                QuantCrypto::Quote::QuoteApi::onNewKline.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange, initMarket = market](auto &exchange, auto &kline) {
+                QuantCrypto::Quote::QuoteApi::onNewKline.subscribe([&fileWriter, &initSymbol = symbol, initExchange = exchange](auto &exchange, auto &kline) {
                     static int count = 0;
                     if (exchange != initExchange) {
-                        return;
-                    }
-                    if (kline.header_.market_ != initMarket) {
                         return;
                     }
                     if (kline.header_.symbol_ != initSymbol) {

@@ -1,5 +1,5 @@
 #include "BybitSpotQuote.hpp"
-#include "BybitPerpetualQuote.hpp"
+#include "BybitContractQuote.hpp"
 #include <iostream>
 
 #include <nlohmann/json.hpp>
@@ -48,10 +48,10 @@ int main()
         spdlog::info("BybitSpotQuoteAdapter NewSymbolEvent for Trade, symbol={}", symbol);
     });
 
-    BybitPerpetualQuoteAdapter bybitPerpetual(config);
+    BybitContractQuoteAdapter bybitPerpetual(config);
 
     bybitPerpetual.addNewSymbolEvent<Trade>([](auto &symbol, auto &book){
-        spdlog::info("BybitPerpetualQuoteAdapter NewSymbolEvent for Trade, symbol={}", symbol);
+        spdlog::info("BybitContractQuoteAdapter NewSymbolEvent for Trade, symbol={}", symbol);
     });
 
     while (true) {
