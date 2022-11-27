@@ -138,24 +138,26 @@ struct MarketBook
         ++askDepth_;
     }
 
-    void updateBid(const double price, const double qty)
+    bool updateBid(const double price, const double qty)
     {
         for (int i = 0; i < bidDepth_; ++i) {
             if (bids_[i].price_ == price) {
                 bids_[i].qty_ = qty;
-                break;
+                return true;
             }
         }
+        return false;
     }
 
-    void updateAsk(const double price, const double qty)
+    bool updateAsk(const double price, const double qty)
     {
         for (int i = 0; i < askDepth_; ++i) {
             if (asks_[i].price_ == price) {
                 asks_[i].qty_ = qty;
-                break;
+                return true;
             }
         }
+        return false;
     }
 
     void deleteBid(const double price)

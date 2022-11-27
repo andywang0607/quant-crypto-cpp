@@ -205,7 +205,9 @@ private:
                 quote.deleteBid(price);
                 continue;
             }
-            quote.insertBid(price, qty);
+            if (!quote.updateBid(price, qty)) {
+                quote.insertBid(price, qty);
+            }
         }
 
         const auto &askArr = json["a"];
@@ -216,7 +218,9 @@ private:
                 quote.deleteAsk(price);
                 continue;
             }
-            quote.insertAsk(price, qty);
+            if(!quote.updateAsk(price, qty)) {
+                quote.insertAsk(price, qty);
+            }
         }
     }
 
