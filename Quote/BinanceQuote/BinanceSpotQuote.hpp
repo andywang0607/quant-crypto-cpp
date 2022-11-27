@@ -10,8 +10,9 @@
 #include <cstddef>
 #include <string>
 
-#include <nlohmann/json.hpp>
 #include "Logger.hpp"
+#include <nlohmann/json.hpp>
+#include <restclient-cpp/restclient.h>
 
 using namespace Util::Time;
 using namespace Util::StringUtil;
@@ -101,10 +102,17 @@ public:
             return;
         }
         if(topic == "depthUpdate") {
+            if (!symbolBookInitInfoMap_.count(symbol)) {
+                querySnapshotBook(symbol);
+            }
+            auto &updateByDiff = symbolBookInitInfoMap_[symbol].updateByDiffBook;
+            if (!isDiffBookValid(jsonMsg, !updateByDiff)) {
+                return;
+            }
+            updateByDiff = true;
             forQuoteData<MarketBook>(symbol, ExchangeT::Binance, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::MarketBook;
                 updateHeader(quote, json, symbol);
-                quote.clear();
                 updateBook(quote, json);
                 logger_.debug("[Book] {}", quote.dump());
             });
@@ -130,7 +138,9 @@ private:
         quote.header_.market_ = MarketT::Spot;
         quote.header_.symbol_ = symbol;
         quote.header_.receivedTime_ = getTime();
-        quote.header_.sourceTime_ = json["E"].get<long long>();
+        if (json.contains("E")) { // snapshot book from api do not contains "E"
+            quote.header_.sourceTime_ = json["E"].get<long long>();
+        }
     }
 
     inline void updateTrade(Trade &quote, const nlohmann::json &json)
@@ -139,6 +149,50 @@ private:
         quote.tradeType_ = json["m"].get<bool>() ? TradeType::Buyer : TradeType::Seller;
         quote.price_ = std::stod(json["p"].get<std::string>());
         quote.qty_ = std::stod(json["q"].get<std::string>());
+    }
+
+    inline void updateSnapshotBook(MarketBook &quote, const nlohmann::json &json)
+    {
+        const auto &bidArr = json["bids"];
+        for (const auto &bid : bidArr) {
+            const auto price = std::stod(bid[0].get<std::string>());
+            const auto qty = std::stod(bid[1].get<std::string>());
+            quote.insertBid(price, qty);
+        }
+
+        const auto &askArr = json["asks"];
+        for (const auto &ask : askArr) {
+            const auto price = std::stod(ask[0].get<std::string>());
+            const auto qty = std::stod(ask[1].get<std::string>());
+            quote.insertAsk(price, qty);
+        }
+    }
+
+    inline bool isDiffBookValid(const nlohmann::json &json, bool isFirstDiffBook)
+    {
+        const auto symbol = json["s"].get<std::string>();
+        const auto lastUpdateId = symbolBookInitInfoMap_[symbol].lastUpdateId;
+        if (isFirstDiffBook) {
+            const auto firstUpdateId = json["U"].get<long long>();
+            const auto finalUpdateId = json["u"].get<long long>();
+            if (firstUpdateId > lastUpdateId ) {
+                logger_.warn("invalid first diff book, firstUpdateId > lastUpdateId, symbol={}, lastUpdateId={}, firstUpdateId={}", symbol, lastUpdateId, firstUpdateId);
+                return false;
+            }
+            if (finalUpdateId < lastUpdateId) {
+                logger_.warn("invalid first diff book, finalUpdateId < lastUpdateId, symbol={}, lastUpdateId={}, finalUpdateId={}", symbol, lastUpdateId, finalUpdateId);
+                return false;
+            }
+            return true;
+        }
+        // Drop any event where u(Final update ID in event) is < lastUpdateId in the snapshot
+        const auto finalUpdateId = json["u"].get<long long>();
+        if (finalUpdateId < lastUpdateId) {
+            logger_.warn("invalid diff book, Final update < lastUpdateId, symbol={}, lastUpdateId={}, finalUpdateId={}", symbol, lastUpdateId, finalUpdateId);
+            return false;
+        }
+
+        return true;
     }
 
     inline void updateBook(MarketBook &quote, const nlohmann::json &json)
@@ -166,6 +220,26 @@ private:
         }
     }
 
+    inline bool querySnapshotBook(const std::string &symbol, int limit = 100)
+    {
+        std::string url = fmt::format("https://api.binance.com/api/v3/depth?symbol={}&limit={}", symbol, limit);
+        RestClient::Response r = RestClient::get(url);
+        if (r.code != 200) {
+            logger_.warn("querySnapshotBook failed, request={} r.code={}, r.body={}", url, r.code, r.body);
+            return false;
+        }
+        const auto jsonMsg = nlohmann::json::parse(r.body);
+        forQuoteData<MarketBook>(symbol, ExchangeT::Binance, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
+            quote.header_.type_ = QuoteType::MarketBook;
+            updateHeader(quote, json, symbol);
+            quote.clear();
+            updateSnapshotBook(quote, json);
+            symbolBookInitInfoMap_[symbol].lastUpdateId = json["lastUpdateId"].get<long long>();
+            logger_.debug("[Book] {}", quote.dump());
+        });
+        return true;
+    }
+
     inline void updateKline(Kline &quote, const nlohmann::json &json)
     {
         quote.type_ = json["k"]["i"].get<std::string>();    // Interval
@@ -181,6 +255,12 @@ private:
 
     nlohmann::json config_;
     Util::Log::Logger logger_;
+    struct SymbolBookInitInfo
+    {
+        long long lastUpdateId = 0;
+        bool updateByDiffBook = false;
+    };
+    std::unordered_map<std::string, SymbolBookInitInfo> symbolBookInitInfoMap_;
 };
 
 using BinanceSpotQuoteAdapter = QuoteAdapter<BinanceSpotQuoteHandler>;
