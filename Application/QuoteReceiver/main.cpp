@@ -1,5 +1,5 @@
 #include "BybitSpotQuote.hpp"
-#include "BybitPerpetualQuote.hpp"
+#include "BybitContractQuote.hpp"
 #include "BinanceSpotQuote.hpp"
 #include "BinanceContractQuote.hpp"
 #include "QuoteWritter.hpp"
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     nlohmann::json config = nlohmann::json::parse(ifs);
 
     BybitSpotQuoteAdapter bybitSpot(config);
-    BybitPerpetualQuoteAdapter bybitPerpetual(config);
+    BybitContractQuoteAdapter bybitPerpetual(config);
     BinanceSpotQuoteAdapter binanceSpot(config);
     BinanceContractQuoteAdapter binanceContract(config);
 

@@ -4,16 +4,48 @@
             "spot": {
                 "enabled": true,
                 "symbol": [
-                    ""
+                    "ETHUSDT",
+                    "BTCUSDT",
+                    "MATICUSDT",
+                    "AVAXUSDT"
                 ],
                 "klineType": [
                     "1m"
                 ]
             },
-            "perpetual": {
-                "enabled": false,
+            "contract": {
+                "enabled": true,
                 "symbol": [
-                    ""
+                    "ETHUSDT",
+                    "BTCUSDT",
+                    "MATICUSDT",
+                    "AVAXUSDT"
+                ],
+                "klineType": [
+                    "1"
+                ]
+            }
+        },
+        "binance": {
+            "spot": {
+                "enabled": true,
+                "symbol": [
+                    "ETHUSDT",
+                    "BTCUSDT",
+                    "MATICUSDT",
+                    "AVAXUSDT"
+                ],
+                "klineType": [
+                    "1m"
+                ]
+            },
+            "contract": {
+                "enabled": true,
+                "symbol": [
+                    "ETHUSDT",
+                    "BTCUSDT",
+                    "MATICUSDT",
+                    "AVAXUSDT"
                 ],
                 "klineType": [
                     "1m"
@@ -22,6 +54,6 @@
         }
     },
     "QuoteReceiver": {
-        "root": ""
+        "root": "/mnt/d/crypto/history_quote/"
     }
 }

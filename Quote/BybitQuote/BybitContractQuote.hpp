@@ -1,5 +1,5 @@
-#ifndef __BYBITPERPETUALQUOTE_H__
-#define __BYBITPERPETUALQUOTE_H__
+#ifndef __BYBITCONTRACTQUOTE_H__
+#define __BYBITCONTRACTQUOTE_H__
 
 #include "QuoteAdapter.hpp"
 #include "QuoteData.hpp"
@@ -17,14 +17,14 @@ using namespace Util::Time;
 
 namespace QuantCrypto::Quote {
 
-class BybitPerpetualQuoteHandler : public QuoteNode
+class BybitContractQuoteHandler : public QuoteNode
 {
 public:
     static inline const std::string Uri = "wss://stream.bybit.com/realtime_public";
 
-    explicit BybitPerpetualQuoteHandler(const nlohmann::json &config)
-        : config_(config["exchange"]["bybit"]["perpetual"])
-        , logger_("BybitPerpetualQuote")
+    explicit BybitContractQuoteHandler(const nlohmann::json &config)
+        : config_(config["exchange"]["bybit"]["contract"])
+        , logger_("BybitContractQuote")
     {
     }
 
@@ -342,8 +342,8 @@ private:
     Util::Log::Logger logger_;
 };
 
-using BybitPerpetualQuoteAdapter = QuoteAdapter<BybitPerpetualQuoteHandler>;
+using BybitContractQuoteAdapter = QuoteAdapter<BybitContractQuoteHandler>;
 
 } // namespace QuantCrypto::Quote
 
-#endif // __BYBITPERPETUALQUOTE_H__
+#endif // __BYBITCONTRACTQUOTE_H__
