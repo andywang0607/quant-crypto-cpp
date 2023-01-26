@@ -1,4 +1,4 @@
-set(targets Receiver QuoteNode QuoteApi BybitQuote BinanceQuote)
+set(targets QuoteNode QuoteApi BybitQuote BinanceQuote)
 foreach(target ${targets})
   add_subdirectory(${target})
 endforeach(target)
