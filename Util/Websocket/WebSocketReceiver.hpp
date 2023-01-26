@@ -11,7 +11,7 @@
 #include <websocketpp/client.hpp>
 #include <websocketpp/config/asio_client.hpp>
 
-namespace QuantCrypto::Quote {
+namespace Util::Websocket {
 
 using client = websocketpp::client<websocketpp::config::asio_tls_client>;
 using context_ptr = std::shared_ptr<boost::asio::ssl::context>;
@@ -192,5 +192,5 @@ private:
     Util::Log::Logger logger_;
     bool isOpen_;
 };
-} // namespace QuantCrypto::Quote
+} // namespace Util-Websocket
 #endif // __WEBSOCKETRECEIVER_H__

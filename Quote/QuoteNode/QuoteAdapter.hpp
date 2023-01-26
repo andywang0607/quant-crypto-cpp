@@ -9,11 +9,11 @@
 namespace QuantCrypto::Quote {
 
 template <typename QuoteHandlerType>
-class QuoteAdapter : public WebSocketReceiver<QuoteHandlerType>
+class QuoteAdapter : public Util::Websocket::WebSocketReceiver<QuoteHandlerType>
 {
 public:
     explicit QuoteAdapter(const nlohmann::json &config)
-        : WebSocketReceiver<QuoteHandlerType>(config)
+        : Util::Websocket::WebSocketReceiver<QuoteHandlerType>(config)
     {
     }
 
