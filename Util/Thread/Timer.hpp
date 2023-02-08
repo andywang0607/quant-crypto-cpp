@@ -56,12 +56,12 @@ public:
     {
         std::lock_guard lk(mutex_);
         auto expiredTimeEvent = std::make_shared<ExpiredEvent>(std::forward<Func>(callback), usInterval, ClockType::now(), invokeNum);
-        eventQueue_.push(expiredTimeEvent);
+        eventQueue_.push(std::move(expiredTimeEvent));
     }
 
     void checkEvent()
     {
-        auto now = ClockType::now();
+        const auto now = ClockType::now();
         while (!eventQueue_.empty()) {
             std::lock_guard lk(mutex_);
             auto expiredEvent = eventQueue_.top();
@@ -73,7 +73,7 @@ public:
 
             if (expiredEvent->invokeNum == -1 || --expiredEvent->invokeNum > 0) {
                 expiredEvent->invokeTime = now + expiredEvent->interval;
-                eventQueue_.push(expiredEvent);
+                eventQueue_.push(std::move(expiredEvent));
             }
         }
     }
@@ -107,8 +107,7 @@ public:
             }
             while (isRunning_.load(std::memory_order::memory_order_acquire)) {
                 timerEvent_.checkEvent();
-
-                std::this_thread::sleep_for(std::chrono::nanoseconds(20));
+                std::this_thread::yield();
             }
         });
     }

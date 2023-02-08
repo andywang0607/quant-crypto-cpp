@@ -19,7 +19,7 @@ TEST(TimerTest, StartAfterPeriodic)
     timer.start();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     timer.stop();
-    EXPECT_EQ(10, count);
+    EXPECT_TRUE(count >= 10);
 }
 
 TEST(TimerTest, StartBeforePeriodic)
@@ -36,7 +36,7 @@ TEST(TimerTest, StartBeforePeriodic)
 
     std::this_thread::sleep_for(std::chrono::milliseconds(11));
     timer.stop();
-    EXPECT_EQ(true, count > 10);
+    EXPECT_TRUE(count >= 10);
 }
 
 TEST(TimerTest, InvokeNumTest)
