@@ -21,11 +21,14 @@ int main()
     std::cout << "createOrder test, ret = " << ret << "\n";
     std::cout << "mockOrder.customOrderId_ = " << mockOrder.customOrderId_ << "\n";
 
-    ret = bybitTradeAdapter.queryWallet();
-    std::cout << "queryPosition test, ret = " << ret << "\n";
-
     ret = bybitTradeAdapter.deleteOrder(&mockOrder);
     std::cout << "deleteOrder test, ret = " << ret << "\n";
 
+    ret = bybitTradeAdapter.queryWallet();
+    std::cout << "queryPosition test, ret = " << ret << "\n";
+    for (const auto &[symbol, position] : bybitTradeAdapter.getHandler().wallet_) {
+        std::cout << "symbol=" << symbol << "/"
+                  << "position=" << position.availableBalance_ << "\n";
+    }
     return 0;
 }

@@ -29,6 +29,11 @@ public:
         return handler_.queryWallet();
     }
 
+    auto &getHandler() const
+    {
+        return handler_;
+    }
+
 private:
     TradeHandler handler_;
 };
