@@ -14,9 +14,6 @@
 #include <nlohmann/json.hpp>
 #include <restclient-cpp/restclient.h>
 
-using namespace Util::Time;
-using namespace Util::StringUtil;
-
 namespace QuantCrypto::Quote {
 
 class BinanceSpotQuoteHandler : public QuoteNode
@@ -50,7 +47,7 @@ public:
                     for (const auto &symbol : symbols) {
                         std::string streamName = "";
                         std::string symbolStr = symbol.get<std::string>();
-                        toLowerCase(symbolStr);
+                        Util::StringUtil::toLowerCase(symbolStr);
                         streamName += symbolStr;
                         streamName += "@";
                         streamName += "kline_";
@@ -63,7 +60,7 @@ public:
             for (const auto &symbol : symbols) {
                 std::string streamName = "";
                 std::string symbolStr = symbol.get<std::string>();
-                toLowerCase(symbolStr);
+                Util::StringUtil::toLowerCase(symbolStr);
                 streamName += symbolStr;
                 streamName += "@";
                 streamName += stream;
@@ -137,7 +134,7 @@ private:
         quote.header_.source_ = ExchangeT::Binance;
         quote.header_.market_ = MarketT::Spot;
         quote.header_.symbol_ = symbol;
-        quote.header_.receivedTime_ = getTime();
+        quote.header_.receivedTime_ = Util::Time::getTime();
         if (json.contains("E")) { // snapshot book from api do not contains "E"
             quote.header_.sourceTime_ = json["E"].get<long long>();
         }

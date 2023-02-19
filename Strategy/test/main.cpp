@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 
 using namespace QuantCrypto::Strategy;
+using namespace QuantCrypto::Quote;
 
 int main()
 {

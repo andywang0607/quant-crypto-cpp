@@ -13,9 +13,6 @@
 
 #include <nlohmann/json.hpp>
 
-using namespace QuantCrypto::Trade;
-using namespace Util::Sign;
-
 namespace QuantCrypto::Trade::Bybit {
 
 class BybitSpotTradeHandler : public QuantCrypto::Trade::SpotTradeNode
@@ -28,7 +25,7 @@ public:
     {
     }
 
-    bool createOrder(Order *order)
+    bool createOrder(Trade::Order *order)
     {
         static const std::string Path = "spot/v1/order";
         static std::map<std::string, std::string> params{
@@ -67,7 +64,7 @@ public:
                 order->customOrderId_ = genOrderId(order->symbol_);
                 params["orderLinkId"] = order->customOrderId_;
 
-                const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
+                const auto signQueryString = Util::Sign::BybitSignTool::signHttpReq(params, apiSecret_);
                 const auto request = URL + Path + "?" + signQueryString;
                 
                 return request;
@@ -90,7 +87,7 @@ public:
             });
     }
 
-    bool deleteOrder(Order *order)
+    bool deleteOrder(Trade::Order *order)
     {
         static const std::string Path = "spot/v1/order";
         static std::map<std::string, std::string> params{
@@ -101,7 +98,7 @@ public:
                 params["orderLinkId"] = order->customOrderId_;
                 params["timestamp"] = std::to_string(Util::Time::getTime());
 
-                const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
+                const auto signQueryString = Util::Sign::BybitSignTool::signHttpReq(params, apiSecret_);
                 const auto request = URL + Path + "?" + signQueryString;
 
                 return request;
@@ -129,7 +126,7 @@ public:
                 [this]() {
                     params["timestamp"] = std::to_string(Util::Time::getTime());
 
-                    const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
+                    const auto signQueryString = Util::Sign::BybitSignTool::signHttpReq(params, apiSecret_);
                     const auto request = URL + Path + "?" + signQueryString;
 
                     return request;

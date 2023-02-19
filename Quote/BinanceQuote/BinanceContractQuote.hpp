@@ -14,8 +14,6 @@
 #include <nlohmann/json.hpp>
 #include <restclient-cpp/restclient.h>
 
-using namespace Util::Time;
-
 namespace QuantCrypto::Quote {
 
 class BinanceContractQuoteHandler : public QuoteNode
@@ -46,7 +44,7 @@ public:
             for (const auto &symbol : symbols) {
                 std::string streamName = "";
                 std::string symbolStr = symbol.get<std::string>();
-                toLowerCase(symbolStr);
+                Util::StringUtil::toLowerCase(symbolStr);
                 streamName += symbolStr;
                 streamName += "@";
                 streamName += "kline_";
@@ -59,7 +57,7 @@ public:
         for (const auto &symbol : symbols) {
             std::string streamName = "";
             std::string symbolStr = symbol.get<std::string>();
-            toLowerCase(symbolStr);
+            Util::StringUtil::toLowerCase(symbolStr);
             streamName += symbolStr;
             streamName += "@";
             streamName += "aggTrade";
@@ -70,7 +68,7 @@ public:
         for (const auto &symbol : symbols) {
             std::string streamName = "";
             std::string symbolStr = symbol.get<std::string>();
-            toLowerCase(symbolStr);
+            Util::StringUtil::toLowerCase(symbolStr);
             streamName += symbolStr;
             streamName += "@";
             streamName += "depth@100ms";
@@ -144,7 +142,7 @@ private:
         quote.header_.source_ = ExchangeT::Binance;
         quote.header_.market_ = MarketT::USDTPerpetual;
         quote.header_.symbol_ = symbol;
-        quote.header_.receivedTime_ = getTime();
+        quote.header_.receivedTime_ = Util::Time::getTime();
         quote.header_.sourceTime_ = json["E"].get<long long>();
     }
 

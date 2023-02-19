@@ -13,9 +13,6 @@
 
 #include <nlohmann/json.hpp>
 
-using namespace QuantCrypto::Trade;
-using namespace Util::Sign;
-
 namespace QuantCrypto::Trade::Bybit {
 
 class BybitPerpetualTradeHandler : public QuantCrypto::Trade::PerpetualTradeNode
@@ -28,7 +25,7 @@ public:
     {
     }
 
-    bool createOrder(Order *order)
+    bool createOrder(Trade::Order *order)
     {
         static const std::string Path = "private/linear/order/create";
 
@@ -96,7 +93,7 @@ public:
                     params["position_idx"] = static_cast<std::underlying_type_t<PositionIndex>>(perPetualOrder->positionIndex_);
                 }
 
-                const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
+                const auto signQueryString = Util::Sign::BybitSignTool::signHttpReq(params, apiSecret_);
                 const auto request = URL + Path + "?" + signQueryString;
 
                 return request;
@@ -119,7 +116,7 @@ public:
             });
     }
 
-    bool deleteOrder(Order *order)
+    bool deleteOrder(Trade::Order *order)
     {
         static const std::string Path = "private/linear/order/cancel";
         static std::map<std::string, std::string> params{
@@ -131,7 +128,7 @@ public:
                 params["symbol"] = order->symbol_;
                 params["timestamp"] = std::to_string(Util::Time::getTime());
 
-                const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
+                const auto signQueryString = Util::Sign::BybitSignTool::signHttpReq(params, apiSecret_);
                 const auto request = URL + Path + "?" + signQueryString;
 
                 return request;
@@ -166,7 +163,7 @@ public:
                 [this]() {
                     params["timestamp"] = std::to_string(Util::Time::getTime());
 
-                    const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
+                    const auto signQueryString = Util::Sign::BybitSignTool::signHttpReq(params, apiSecret_);
                     const auto request = URL + Path + "?" + signQueryString;
 
                     return request;

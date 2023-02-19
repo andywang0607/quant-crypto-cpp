@@ -13,8 +13,6 @@
 
 #include <nlohmann/json.hpp>
 
-using namespace Util::Time;
-
 namespace QuantCrypto::Quote {
 
 class BybitContractQuoteHandler : public QuoteNode
@@ -183,7 +181,7 @@ private:
         quote.header_.source_ = ExchangeT::ByBit;
         quote.header_.market_ = MarketT::USDTPerpetual;
         quote.header_.symbol_ = symbol;
-        quote.header_.receivedTime_ = getTime();
+        quote.header_.receivedTime_ = Util::Time::getTime();
         quote.header_.sourceTime_ = std::forward<GetSourceTime>(f)();
     }
 
@@ -223,7 +221,7 @@ private:
             quote.lastTickDirection_ = dataObj["last_tick_direction"].get<std::string>();
             quote.nextFundingTime_ = [&dataObj]() {
                 auto dateTimeStr = dataObj["next_funding_time"].get<std::string>();
-                return toTimestamp(dateTimeStr);
+                return Util::Time::toTimestamp(dateTimeStr);
             }();
         } else {
             handleDelta(
@@ -251,7 +249,7 @@ private:
                     quote.lastTickDirection_ = dataObj.contains("last_tick_direction") ? dataObj["last_tick_direction"].get<std::string>() : quote.lastTickDirection_;
                     quote.nextFundingTime_ = dataObj.contains("next_funding_time") ? [&dataObj]() {
                         auto dateTimeStr = dataObj["next_funding_time"].get<std::string>();
-                        return toTimestamp(dateTimeStr);
+                        return Util::Time::toTimestamp(dateTimeStr);
                     }()
                                                                                    : quote.nextFundingTime_;
                 },
