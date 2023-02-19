@@ -6,4 +6,4 @@ target_sources(
             ${CMAKE_CURRENT_SOURCE_DIR}/TradeAdapter.hpp)
 
 target_include_directories(TradeApi INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(TradeApi INTERFACE spdlog_header_only)
+target_link_libraries(TradeApi INTERFACE Util-Resource spdlog_header_only)

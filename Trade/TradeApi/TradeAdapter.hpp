@@ -29,6 +29,17 @@ public:
         return handler_.queryWallet();
     }
 
+    auto *allocateOrder(std::string symbol, double price, double qty, Side side)
+    {
+        return handler_.allocateOrder(symbol, price, qty, side);
+    }
+
+    template<typename OrderType>
+    void recycleOrder(OrderType *order)
+    {
+        return handler_.recycleOrder(order);
+    }
+
     auto &getHandler() const
     {
         return handler_;
