@@ -4,8 +4,7 @@
 #include "BybitSignTool.hpp"
 #include "RestRequester.hpp"
 #include "TimeUtils.hpp"
-#include "TradeNode.hpp"
-#include "TradeAdapter.hpp"
+#include "SpotTradeNode.hpp"
 #include "Logger.hpp"
 
 #include <map>
@@ -15,10 +14,10 @@
 
 namespace QuantCrypto::Trade::Bybit {
 
-class BybitSpotTradeHandler : public QuantCrypto::Trade::SpotTradeNode
+class BybitSpotTradeAdapter : public Trade::SpotTradeNode
 {
 public:
-    BybitSpotTradeHandler(const nlohmann::json &config)
+    BybitSpotTradeAdapter(const nlohmann::json &config)
         : config_(config)
         , apiSecret_(config["exchange"]["bybit"]["apiSecret"].get<std::string>())
         , logger_("BybitSpotTrade")
@@ -148,7 +147,7 @@ public:
         const auto balances = respBody["result"]["balances"];
         for (const auto &coinObj : balances) {
             const std::string coin = coinObj["coin"].get<std::string>();
-            auto &coinPosition = wallet_[coin];
+            auto &coinPosition = this->wallet_[coin];
 
             coinPosition.total_ = std::stod(coinObj["total"].get<std::string>());
             coinPosition.free_ = std::stod(coinObj["free"].get<std::string>());
@@ -172,8 +171,6 @@ private:
     std::string apiSecret_;
     Util::Log::Logger logger_;
 };
-
-using BybitSpotTradeAdapter = TradeAdapter<Bybit::BybitSpotTradeHandler, nlohmann::json>;
 
 } // namespace QuantCrypto::Trade::Bybit
 #endif // __BYBITSPOTTRADEADAPTER_H__

@@ -5,8 +5,7 @@
 #include "Logger.hpp"
 #include "RestRequester.hpp"
 #include "TimeUtils.hpp"
-#include "TradeAdapter.hpp"
-#include "TradeNode.hpp"
+#include "PerpetualTradeNode.hpp"
 
 #include <map>
 #include <string>
@@ -15,10 +14,10 @@
 
 namespace QuantCrypto::Trade::Bybit {
 
-class BybitPerpetualTradeHandler : public QuantCrypto::Trade::PerpetualTradeNode
+class BybitPerpetualTradeAdapter : public Trade::PerpetualTradeNode
 {
 public:
-    BybitPerpetualTradeHandler(const nlohmann::json &config)
+    BybitPerpetualTradeAdapter(const nlohmann::json &config)
         : config_(config)
         , apiSecret_(config["exchange"]["bybit"]["apiSecret"].get<std::string>())
         , logger_("BybitPerpetualTrade")
@@ -215,8 +214,6 @@ private:
     std::string apiSecret_;
     Util::Log::Logger logger_;
 };
-
-using BybitPerpetualTradeAdapter = TradeAdapter<Bybit::BybitPerpetualTradeHandler, nlohmann::json>;
 
 } // namespace QuantCrypto::Trade::Bybit
 
