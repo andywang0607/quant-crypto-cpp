@@ -26,11 +26,5 @@ int main()
 
     bybitTradeAdapter.recycleOrder(mockOrder);
 
-    ret = bybitTradeAdapter.queryWallet();
-    std::cout << "queryPosition test, ret = " << ret << "\n";
-    for (const auto &[symbol, position] : bybitTradeAdapter.wallet_) {
-        std::cout << "symbol=" << symbol << "/"
-                  << "position=" << position.total_ << "\n";
-    }
     return 0;
 }

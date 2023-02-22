@@ -22,6 +22,7 @@ public:
         , apiSecret_(config["exchange"]["bybit"]["apiSecret"].get<std::string>())
         , logger_("BybitSpotTrade")
     {
+        init();
     }
 
     bool createOrder(Trade::Order *order)
@@ -114,7 +115,7 @@ public:
             });
     }
 
-    bool queryWallet()
+    virtual bool queryWallet() override
     {
         static const std::string Path = "spot/v1/account";
         static std::map<std::string, std::string> params{
@@ -160,6 +161,13 @@ public:
     }
 
 private:
+    void init()
+    {
+        if (!Trade::SpotTradeNode::init()) {
+            logger_.info("SpotTradeNode init failed");
+        }
+    }
+
     static inline std::string genOrderId(const std::string &symbol)
     {
         static long long sequenceNo = 0;

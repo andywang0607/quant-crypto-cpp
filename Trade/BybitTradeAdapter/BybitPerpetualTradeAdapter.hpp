@@ -22,6 +22,7 @@ public:
         , apiSecret_(config["exchange"]["bybit"]["apiSecret"].get<std::string>())
         , logger_("BybitPerpetualTrade")
     {
+        init();
     }
 
     bool createOrder(Trade::Order *order)
@@ -150,7 +151,7 @@ public:
             });
     }
 
-    bool queryWallet()
+    virtual bool queryWallet() override
     {
         static const std::string Path = "v2/private/wallet/balance";
         static std::map<std::string, std::string> params{
@@ -203,6 +204,13 @@ public:
     }
 
 private:
+    void init()
+    {
+        if (!Trade::PerpetualTradeNode::init()) {
+            logger_.info("PerpetualTradeNode init failed");
+        }
+    }
+
     inline std::string genOrderId(const std::string &symbol)
     {
         static long long sequenceNo = 0;

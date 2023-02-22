@@ -27,10 +27,18 @@ public:
         orderPool_.recycle(order);
     }
 
-    std::unordered_map<std::string, SpotPosition> wallet_;
-
 protected:
+    bool init()
+    {
+        return queryWallet();
+    }
+
+    virtual bool queryWallet() { return false; };
+
     Util::Resource::FixedObjectPool<Order> orderPool_;
+
+    using WalletType = std::unordered_map<std::string, SpotPosition>;
+    WalletType wallet_;
 };
 
 } // namespace QuantCrypto::Trade
