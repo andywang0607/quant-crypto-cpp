@@ -7,21 +7,24 @@
 #include <unordered_map>
 
 namespace QuantCrypto::Trade {
-class PerpetualTradeNode
+
+template<typename OrderType, typename PositionType>
+class TradeNode
 {
 public:
-    PerpetualTradeNode()
+    TradeNode()
         : orderPool_(128)
     {
     }
-    virtual ~PerpetualTradeNode() = default;
 
-    PerpetualOrder *allocateOrder(std::string symbol, double price, double qty, Side side)
+    virtual ~TradeNode() = default;
+
+    OrderType *allocateOrder(std::string symbol, double price, double qty, Side side)
     {
         return orderPool_.construct(symbol, price, qty, side);
     }
 
-    void recycleOrder(PerpetualOrder *order)
+    void recycleOrder(OrderType *order)
     {
         orderPool_.recycle(order);
     }
@@ -34,11 +37,15 @@ protected:
 
     virtual bool queryWallet() { return false; };
 
-    Util::Resource::FixedObjectPool<PerpetualOrder> orderPool_;
+    Util::Resource::FixedObjectPool<OrderType> orderPool_;
 
-    using WalletType = std::unordered_map<std::string, PerpetualPosition>;
+    using WalletType = std::unordered_map<std::string, PositionType>;
     WalletType wallet_;
 };
+
+using SpotTradeNode = TradeNode<Trade::Order, Trade::SpotPosition>;
+using PerpetualTradeNode = TradeNode<Trade::PerpetualOrder, Trade::PerpetualPosition>;
+
 
 } // namespace QuantCrypto::Trade
 #endif // __TRADENODE_H__

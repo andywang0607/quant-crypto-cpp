@@ -4,7 +4,7 @@
 #include "BybitSignTool.hpp"
 #include "RestRequester.hpp"
 #include "TimeUtils.hpp"
-#include "SpotTradeNode.hpp"
+#include "TradeNode.hpp"
 #include "Logger.hpp"
 
 #include <map>

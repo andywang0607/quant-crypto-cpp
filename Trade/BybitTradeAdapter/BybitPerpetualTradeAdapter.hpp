@@ -5,7 +5,7 @@
 #include "Logger.hpp"
 #include "RestRequester.hpp"
 #include "TimeUtils.hpp"
-#include "PerpetualTradeNode.hpp"
+#include "TradeNode.hpp"
 
 #include <map>
 #include <string>
