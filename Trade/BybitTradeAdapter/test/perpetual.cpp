@@ -14,18 +14,17 @@ int main()
     bybitConfig["exchange"]["bybit"]["apiSecret"] = "";
 
     auto bybitTradeAdapter = Bybit::BybitPerpetualTradeAdapter(bybitConfig);
-    auto mockOrder = PerpetualOrder("BTCUSDT", 21000, 0.001, Side::Buy);
-    mockOrder.timeInForce_ = TimeinForce::GTC;
+    auto *mockOrder = bybitTradeAdapter.allocateOrder("BTCUSDT", 21000, 0.001, Side::Buy);
+    mockOrder->timeInForce_ = TimeinForce::GTC;
 
-    auto ret = bybitTradeAdapter.createOrder(&mockOrder);
+    auto ret = bybitTradeAdapter.createOrder(mockOrder);
     std::cout << "createOrder test, ret = " << ret << "\n";
-    std::cout << "mockOrder.customOrderId_ = " << mockOrder.customOrderId_ << "\n";
+    std::cout << "mockOrder->customOrderId_ = " << mockOrder->customOrderId_ << "\n";
 
-    ret = bybitTradeAdapter.queryWallet();
-    std::cout << "queryPosition test, ret = " << ret << "\n";
-
-    ret = bybitTradeAdapter.deleteOrder(&mockOrder);
+    ret = bybitTradeAdapter.deleteOrder(mockOrder);
     std::cout << "deleteOrder test, ret = " << ret << "\n";
+
+    bybitTradeAdapter.recycleOrder(mockOrder);
 
     return 0;
 }

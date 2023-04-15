@@ -2,168 +2,187 @@
 #define __BYBITPERPETUALTRADEADAPTER_H__
 
 #include "BybitSignTool.hpp"
-#include "TimeUtils.hpp"
-#include "TradeAdapter.hpp"
-#include "TradeNode.hpp"
 #include "Logger.hpp"
+#include "RestRequester.hpp"
+#include "TimeUtils.hpp"
+#include "TradeNode.hpp"
 
 #include <map>
 #include <string>
 
 #include <nlohmann/json.hpp>
-#include <restclient-cpp/restclient.h>
-
-using namespace QuantCrypto::Trade;
-using namespace Util::Sign;
 
 namespace QuantCrypto::Trade::Bybit {
 
-class BybitPerpetualTradeHandler : public QuantCrypto::Trade::PerpetualTradeNode
+class BybitPerpetualTradeAdapter : public Trade::PerpetualTradeNode
 {
 public:
-    BybitPerpetualTradeHandler(const nlohmann::json &config)
+    BybitPerpetualTradeAdapter(const nlohmann::json &config)
         : config_(config)
         , apiSecret_(config["exchange"]["bybit"]["apiSecret"].get<std::string>())
         , logger_("BybitPerpetualTrade")
     {
+        init();
     }
 
-    bool createOrder(Order *order)
+    bool createOrder(Trade::Order *order)
     {
         static const std::string Path = "private/linear/order/create";
 
         static std::map<std::string, std::string> params{
             {"api_key", config_["exchange"]["bybit"]["apiKey"].get<std::string>()}};
 
-        auto *perPetualOrder = dynamic_cast<PerpetualOrder *>(order);
-        params["symbol"] = perPetualOrder->symbol_;
-        params["qty"] = std::to_string(perPetualOrder->qty_);
-        params["price"] = std::to_string(perPetualOrder->price_);
-        params["timestamp"] = std::to_string(Util::Time::getTime());
-        params["side"] = [perPetualOrder]() -> std::string {
-            if (perPetualOrder->side_ == Side::Buy) {
-                return "Buy";
-            }
-            return "Sell";
-        }();
-        params["order_type"] = [perPetualOrder]() {
-            if (perPetualOrder->type_ == OrderType::Limit) {
-                return "Limit";
-            }
-            return "Market";
-        }();
-        params["time_in_force"] = [perPetualOrder]() {
-            if (perPetualOrder->timeInForce_ == TimeinForce::GTC) {
-                return "GoodTillCancel";
-            }
-            if (perPetualOrder->timeInForce_ == TimeinForce::FOK) {
-                return "FillOrKill";
-            }
-            return "ImmediateOrCancel";
-        }();
-        perPetualOrder->customOrderId_ = genOrderId(perPetualOrder->symbol_);
-        params["orderLinkId"] = perPetualOrder->customOrderId_;
+        return Util::Requester::RestRequester::post(
+            [this, &order]() {
+                auto *perPetualOrder = dynamic_cast<PerpetualOrder *>(order);
+                params["symbol"] = perPetualOrder->symbol_;
+                params["qty"] = std::to_string(perPetualOrder->qty_);
+                params["price"] = std::to_string(perPetualOrder->price_);
+                params["timestamp"] = std::to_string(Util::Time::getTime());
+                params["side"] = [perPetualOrder]() -> std::string {
+                    if (perPetualOrder->side_ == Side::Buy) {
+                        return "Buy";
+                    }
+                    return "Sell";
+                }();
+                params["order_type"] = [perPetualOrder]() {
+                    if (perPetualOrder->type_ == OrderType::Limit) {
+                        return "Limit";
+                    }
+                    return "Market";
+                }();
+                params["time_in_force"] = [perPetualOrder]() {
+                    if (perPetualOrder->timeInForce_ == TimeinForce::GTC) {
+                        return "GoodTillCancel";
+                    }
+                    if (perPetualOrder->timeInForce_ == TimeinForce::FOK) {
+                        return "FillOrKill";
+                    }
+                    return "ImmediateOrCancel";
+                }();
+                perPetualOrder->customOrderId_ = genOrderId(perPetualOrder->symbol_);
+                params["order_link_id"] = perPetualOrder->customOrderId_;
 
-        params["reduce_only"] = perPetualOrder->reduceOnly_ ? "True" : "False";
-        params["close_on_trigger"] = perPetualOrder->closeOnTrigger_ ? "True" : "False";
-        if (perPetualOrder->takeProfitPrice_ > 0) {
-            params["take_profit"] = std::to_string(perPetualOrder->takeProfitPrice_);
-        }
-        if (perPetualOrder->stopLossPrice_ > 0) {
-            params["stop_loss"] = std::to_string(perPetualOrder->stopLossPrice_);
-        }
-        params["tp_trigger_by"] = [perPetualOrder]() {
-            if (perPetualOrder->takeProfitTriggerType_ == TriggerPriceType::LastPrice) {
-                return "LastPrice";
-            }
-            if (perPetualOrder->takeProfitTriggerType_ == TriggerPriceType::IndexPrice) {
-                return "IndexPrice";
-            }
-            return "MarkPrice";
-        }();
-        params["sl_trigger_by"] = [perPetualOrder]() {
-            if (perPetualOrder->stopLossTriggerType_ == TriggerPriceType::LastPrice) {
-                return "LastPrice";
-            }
-            if (perPetualOrder->stopLossTriggerType_ == TriggerPriceType::IndexPrice) {
-                return "IndexPrice";
-            }
-            return "MarkPrice";
-        }();
-        if (perPetualOrder->positionIndex_ != PositionIndex::Default) {
-            params["position_idx"] = static_cast<std::underlying_type_t<PositionIndex>>(perPetualOrder->positionIndex_);
-        }
+                params["reduce_only"] = perPetualOrder->reduceOnly_ ? "True" : "False";
+                params["close_on_trigger"] = perPetualOrder->closeOnTrigger_ ? "True" : "False";
+                if (perPetualOrder->takeProfitPrice_ > 0) {
+                    params["take_profit"] = std::to_string(perPetualOrder->takeProfitPrice_);
+                }
+                if (perPetualOrder->stopLossPrice_ > 0) {
+                    params["stop_loss"] = std::to_string(perPetualOrder->stopLossPrice_);
+                }
+                params["tp_trigger_by"] = [perPetualOrder]() {
+                    if (perPetualOrder->takeProfitTriggerType_ == TriggerPriceType::LastPrice) {
+                        return "LastPrice";
+                    }
+                    if (perPetualOrder->takeProfitTriggerType_ == TriggerPriceType::IndexPrice) {
+                        return "IndexPrice";
+                    }
+                    return "MarkPrice";
+                }();
+                params["sl_trigger_by"] = [perPetualOrder]() {
+                    if (perPetualOrder->stopLossTriggerType_ == TriggerPriceType::LastPrice) {
+                        return "LastPrice";
+                    }
+                    if (perPetualOrder->stopLossTriggerType_ == TriggerPriceType::IndexPrice) {
+                        return "IndexPrice";
+                    }
+                    return "MarkPrice";
+                }();
+                if (perPetualOrder->positionIndex_ != PositionIndex::Default) {
+                    params["position_idx"] = static_cast<std::underlying_type_t<PositionIndex>>(perPetualOrder->positionIndex_);
+                }
 
-        const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
-        const auto request = URL + Path + "?" + signQueryString;
+                const auto signQueryString = Util::Sign::BybitSignTool::signHttpReq(params, apiSecret_);
+                const auto request = URL + Path + "?" + signQueryString;
 
-        RestClient::Response r = RestClient::post(request, "application/x-www-form-urlencoded", "");
-        if (r.code != 200) {
-            logger_.warn("createOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
-            return false;
-        }
-
-        const auto result = nlohmann::json::parse(r.body);
-        if (result["ret_code"].get<int>() != 0 || result["ext_code"].get<std::string>() != "") {
-            logger_.warn("createOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
-            return false;
-        }
-
-        return true;
+                return request;
+            },
+            []() {
+                return "application/x-www-form-urlencoded";
+            },
+            []() {
+                return "";
+            },
+            [](const auto &response) {
+                if (response.code != 200) {
+                    return false;
+                }
+                const nlohmann::json result = nlohmann::json::parse(response.body);
+                if (result["ret_code"].get<int>() != 0 || result["ext_code"].get<std::string>() != "") {
+                    return false;
+                }
+                return true;
+            });
     }
 
-    bool deleteOrder(Order *order)
+    bool deleteOrder(Trade::Order *order)
     {
         static const std::string Path = "private/linear/order/cancel";
         static std::map<std::string, std::string> params{
             {"api_key", config_["exchange"]["bybit"]["apiKey"].get<std::string>()}};
 
-        params["order_link_id"] = order->customOrderId_;
-        params["symbol"] = order->symbol_;
-        params["timestamp"] = std::to_string(Util::Time::getTime());
+        return Util::Requester::RestRequester::post(
+            [this, &order]() {
+                params["order_link_id"] = order->customOrderId_;
+                params["symbol"] = order->symbol_;
+                params["timestamp"] = std::to_string(Util::Time::getTime());
 
-        const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
-        const auto request = URL + Path + "?" + signQueryString;
+                const auto signQueryString = Util::Sign::BybitSignTool::signHttpReq(params, apiSecret_);
+                const auto request = URL + Path + "?" + signQueryString;
 
-        RestClient::Response r = RestClient::post(request, "application/x-www-form-urlencoded", "");
-        if (r.code != 200) {
-            logger_.warn("deleteOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
-            return false;
-        }
-
-        const auto result = nlohmann::json::parse(r.body);
-        if (result["ret_code"].get<int>() != 0 || result["ext_code"].get<std::string>() != "") {
-            logger_.warn("deleteOrder failed, request={} r.code={}, r.body={}", request, r.code, r.body);
-            return false;
-        }
-
-        return true;
+                return request;
+            },
+            []() {
+                return "application/x-www-form-urlencoded";
+            },
+            []() {
+                return "";
+            },
+            [](const auto &response) {
+                if (response.code != 200) {
+                    return false;
+                }
+                const nlohmann::json result = nlohmann::json::parse(response.body);
+                if (result["ret_code"].get<int>() != 0 || result["ext_code"].get<std::string>() != "") {
+                    return false;
+                }
+                return true;
+            });
     }
 
-    bool queryWallet()
+    virtual bool queryWallet() override
     {
         static const std::string Path = "v2/private/wallet/balance";
         static std::map<std::string, std::string> params{
             {"api_key", config_["exchange"]["bybit"]["apiKey"].get<std::string>()}};
 
-        params["timestamp"] = std::to_string(Util::Time::getTime());
 
-        const auto signQueryString = BybitSignTool::signHttpReq(params, apiSecret_);
-        const auto request = URL + Path + "?" + signQueryString;
+        nlohmann::json respBody;
+        if (!Util::Requester::RestRequester::get(
+                [this]() {
+                    params["timestamp"] = std::to_string(Util::Time::getTime());
 
-        RestClient::Response r = RestClient::get(request);
-        if (r.code != 200) {
-            logger_.warn("queryWallet failed, request={} r.code={}, r.body={}", request, r.code, r.body);
+                    const auto signQueryString = Util::Sign::BybitSignTool::signHttpReq(params, apiSecret_);
+                    const auto request = URL + Path + "?" + signQueryString;
+
+                    return request;
+                },
+                [&respBody](const auto &response) {
+                    if (response.code != 200) {
+                        return false;
+                    }
+                    const nlohmann::json result = nlohmann::json::parse(response.body);
+                    if (result["ret_code"].get<int>() != 0 || result["ext_code"].get<std::string>() != "") {
+                        return false;
+                    }
+                    respBody = result;
+                    return true;
+                })) {
             return false;
         }
 
-        const auto result = nlohmann::json::parse(r.body);
-        if (result["ret_code"].get<int>() != 0 || result["ext_code"].get<std::string>() != "") {
-            logger_.warn("queryWallet failed, request={} r.code={}, r.body={}", request, r.code, r.body);
-            return false;
-        }
-
-        for (const auto &[coin, coinObj] : result["result"].items()) {
+        for (const auto &[coin, coinObj] : respBody["result"].items()) {
             auto &coinPosition = wallet_[coin];
 
             coinPosition.equity_ = coinObj["equity"].get<double>();
@@ -185,6 +204,13 @@ public:
     }
 
 private:
+    void init()
+    {
+        if (!Trade::PerpetualTradeNode::init()) {
+            logger_.info("PerpetualTradeNode init failed");
+        }
+    }
+
     inline std::string genOrderId(const std::string &symbol)
     {
         static long long sequenceNo = 0;
@@ -196,8 +222,6 @@ private:
     std::string apiSecret_;
     Util::Log::Logger logger_;
 };
-
-using BybitPerpetualTradeAdapter = TradeAdapter<Bybit::BybitPerpetualTradeHandler, nlohmann::json>;
 
 } // namespace QuantCrypto::Trade::Bybit
 

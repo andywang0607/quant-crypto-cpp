@@ -8,8 +8,6 @@
 #include <spdlog/spdlog.h>
 #include <unordered_set>
 
-using namespace QuantCrypto::Quote;
-
 namespace QuantCrypto::Strategy {
 
 class StrategyBase : public StrategyInterface
@@ -55,19 +53,19 @@ protected:
     template <typename Func>
     void subscribeNewBookCB(Func &&cb)
     {
-        unsubscriber_ += QuoteApi::onNewBook.subscribe(std::forward<Func>(cb));
+        unsubscriber_ += Quote::QuoteApi::onNewBook.subscribe(std::forward<Func>(cb));
     }
 
     template <typename Func>
     void subscribeNewTradeCB(Func &&cb)
     {
-        unsubscriber_ += QuoteApi::onNewTrade.subscribe(std::forward<Func>(cb));
+        unsubscriber_ += Quote::QuoteApi::onNewTrade.subscribe(std::forward<Func>(cb));
     }
 
     template <typename Func>
     void subscribeNewKlineCB(Func &&cb)
     {
-        unsubscriber_ += QuoteApi::onNewKline.subscribe(std::forward<Func>(cb));
+        unsubscriber_ += Quote::QuoteApi::onNewKline.subscribe(std::forward<Func>(cb));
     }
 
 private:
@@ -80,12 +78,12 @@ private:
         subscribeSymbolMap_[convert2ExchangeT(exchange)].insert(symbol);
     }
 
-    static inline ExchangeT convert2ExchangeT(const std::string &exchangeStr)
+    static inline Quote::ExchangeT convert2ExchangeT(const std::string &exchangeStr)
     {
         if (strcasecmp(exchangeStr.c_str(), "Bybit") == 0) {
-            return ExchangeT::ByBit;
+            return Quote::ExchangeT::ByBit;
         }
-        return ExchangeT::ByBit;
+        return Quote::ExchangeT::ByBit;
     }
 
     inline bool isSubscribeSymbol(const Quote::ExchangeT &exchange, const Quote::Header &header)
@@ -95,7 +93,7 @@ private:
         return subscribeSymbolSet.find(header.symbol_) != subscribeSymbolSet.end();
     }
 
-    std::unordered_map<ExchangeT, std::unordered_set<std::string>> subscribeSymbolMap_;
+    std::unordered_map<Quote::ExchangeT, std::unordered_set<std::string>> subscribeSymbolMap_;
 };
 } // namespace QuantCrypto::Strategy
 #endif // __STRATEGYBASE_H__

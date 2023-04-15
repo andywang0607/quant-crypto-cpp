@@ -29,17 +29,17 @@ public:
         spdlog::info("TestStrategy stop");
     }
 
-    virtual void onNewBook(const ExchangeT &exchange, const std::string &symbol) override
+    virtual void onNewBook(const Quote::ExchangeT &exchange, const std::string &symbol) override
     {
         spdlog::info("TestStrategy onNewBook, exchange={}, symbol={}", exchange, symbol);
     }
 
-    virtual void onNewTrade(const ExchangeT &exchange, const std::string &symbol) override
+    virtual void onNewTrade(const Quote::ExchangeT &exchange, const std::string &symbol) override
     {
         spdlog::info("TestStrategy onNewTrade, exchange={}, symbol={}", exchange, symbol);
     }
 
-    virtual void onNewKline(const ExchangeT &exchange, const std::string &symbol) override
+    virtual void onNewKline(const Quote::ExchangeT &exchange, const std::string &symbol) override
     {
         spdlog::info("TestStrategy onNewKline, exchange={}, symbol={}", exchange, symbol);
     }

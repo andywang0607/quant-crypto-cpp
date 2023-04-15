@@ -12,8 +12,6 @@
 #include <nlohmann/json.hpp>
 #include "Logger.hpp"
 
-using namespace Util::Time;
-
 namespace QuantCrypto::Quote {
 
 class BybitSpotQuoteHandler : public QuoteNode
@@ -138,7 +136,7 @@ private:
         quote.header_.source_ = ExchangeT::ByBit;
         quote.header_.market_ = MarketT::Spot;
         quote.header_.symbol_ = symbol;
-        quote.header_.receivedTime_ = getTime();
+        quote.header_.receivedTime_ = Util::Time::getTime();
         quote.header_.sourceTime_ = json["data"].at("t").get<long long>();
     }
 
