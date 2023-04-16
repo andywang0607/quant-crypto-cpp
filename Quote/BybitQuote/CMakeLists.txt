@@ -1,6 +1,7 @@
 add_library(BybitQuote INTERFACE)
 target_sources(
-  BybitQuote INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/BybitSpotQuote.hpp
+  BybitQuote INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/BybitV5QuoteHandler.hpp
+                       ${CMAKE_CURRENT_SOURCE_DIR}/BybitSpotQuote.hpp
                        ${CMAKE_CURRENT_SOURCE_DIR}/BybitContractQuote.hpp)
 
 target_include_directories(BybitQuote INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
