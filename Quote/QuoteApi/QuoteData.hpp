@@ -69,7 +69,7 @@ struct Info
 
 struct MarketBook
 {
-    static constexpr size_t MaxDepth = 40;
+    static constexpr size_t MaxDepth = 50;
 
     MarketBook() = default;
     ~MarketBook() = default;
@@ -98,14 +98,38 @@ struct MarketBook
         askDepth_++;
     }
 
+    // Bid array is sorted in descending order
     void insertBid(const double price, const double qty)
     {
         if (bidDepth_ >= MaxDepth) {
             return;
         }
+        if (bidDepth_ == 0) {
+            bids_[0].price_ = price;
+            bids_[0].qty_ = qty;
+            ++bidDepth_;
+            return;
+        }
+        if (price > bids_[0].price_) {
+            memcpy(&bids_[1], &bids_[0], bidDepth_ * sizeof(Info));
+            bids_[0].price_ = price;
+            bids_[0].qty_ = qty;
+            ++bidDepth_;
+            return;
+        }
+        if (price < bids_[bidDepth_ - 1].price_) {
+            bids_[bidDepth_].price_ = price;
+            bids_[bidDepth_].qty_ = qty;
+            ++bidDepth_;
+            return;
+        }
         for (int i = 0; i < bidDepth_; ++i) {
-            if (price > bids_[i].price_) {
+            if (price < bids_[i].price_) {
                 continue;
+            }
+            if (price == bids_[i].price_) {
+                bids_[i].qty_ = qty;
+                return;
             }
             memcpy(&bids_[i] + 1, &bids_[i], (bidDepth_ - i) * sizeof(Info));
             bids_[i].price_ = price;
@@ -113,19 +137,40 @@ struct MarketBook
             ++bidDepth_;
             return;
         }
-        bids_[bidDepth_].price_ = price;
-        bids_[bidDepth_].qty_ = qty;
-        ++bidDepth_;
     }
 
+    // Ask array is sorted in ascending order
     void insertAsk(const double price, const double qty)
     {
         if (askDepth_ >= MaxDepth) {
             return;
         }
+        if (askDepth_ == 0) {
+            asks_[0].price_ = price;
+            asks_[0].qty_ = qty;
+            ++askDepth_;
+            return;
+        }
+        if (price < asks_[0].price_) {
+            memcpy(&asks_[1], &asks_[0], askDepth_ * sizeof(Info));
+            asks_[0].price_ = price;
+            asks_[0].qty_ = qty;
+            ++askDepth_;
+            return;
+        }
+        if (price > asks_[askDepth_ - 1].price_) {
+            asks_[askDepth_].price_ = price;
+            asks_[askDepth_].qty_ = qty;
+            ++askDepth_;
+            return;
+        }
         for (int i = 0; i < askDepth_; ++i) {
             if (price > asks_[i].price_) {
                 continue;
+            }
+            if (price == asks_[i].price_) {
+                asks_[i].qty_ = qty;
+                return;
             }
             memcpy(&asks_[i] + 1, &asks_[i], (askDepth_ - i) * sizeof(Info));
             asks_[i].price_ = price;
@@ -133,9 +178,6 @@ struct MarketBook
             ++askDepth_;
             return;
         }
-        asks_[askDepth_].price_ = price;
-        asks_[askDepth_].qty_ = qty;
-        ++askDepth_;
     }
 
     bool updateBid(const double price, const double qty)
