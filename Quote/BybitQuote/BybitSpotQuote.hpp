@@ -17,7 +17,7 @@ namespace QuantCrypto::Quote {
 class BybitSpotQuoteHandler : public QuoteNode
 {
 public:
-    static inline const std::string Uri = "wss://stream.bybit.com/spot/quote/ws/v2";
+    static inline const std::string Uri = "wss://stream.bybit.com/v5/public/spot";
 
     explicit BybitSpotQuoteHandler(const nlohmann::json &config)
         : config_(config["exchange"]["bybit"]["spot"])
@@ -32,23 +32,15 @@ public:
         const auto &symbols = config_["symbol"];
 
         for (const auto &symbol : symbols) {
-            static nlohmann::json tradeReq;
+            static nlohmann::json req;
 
-            tradeReq["topic"] = "trade";
-            tradeReq["event"] = "sub";
-            tradeReq["params"] = {{"binary", false}, {"symbol", symbol}};
+            req["op"] = "subscribe";
+            req["args"] = nlohmann::json::array(
+                {fmt::format("publicTrade.{}", symbol),
+                fmt::format("orderbook.50.{}", symbol)}
+            );
 
-            ret.emplace_back(tradeReq);
-        }
-
-        for (const auto &symbol : symbols) {
-            static nlohmann::json bookReq;
-
-            bookReq["topic"] = "depth";
-            bookReq["event"] = "sub";
-            bookReq["params"] = {{"binary", false}, {"symbol", symbol}};
-
-            ret.emplace_back(bookReq);
+            ret.emplace_back(req);
         }
 
         const auto &klineType = config_["klineType"];
@@ -56,9 +48,8 @@ public:
             for (const auto &type : klineType) {
                 static nlohmann::json klineReq;
 
-                klineReq["topic"] = "kline";
-                klineReq["event"] = "sub";
-                klineReq["params"] = {{"binary", false}, {"symbol", symbol}, {"klineType", type}};
+                klineReq["op"] = "subscribe";
+                klineReq["args"] = nlohmann::json::array({fmt::format("kline.{}.{}", type, symbol)});
 
                 ret.emplace_back(klineReq);
             }
@@ -77,36 +68,47 @@ public:
         if (!jsonMsg.contains("data")) {
             return;
         }
-        const auto &topic = jsonMsg["topic"];
+        const auto &topic = jsonMsg["topic"].get<std::string>();
 
-        const std::string &symbol = jsonMsg["params"]["symbol"].get<std::string>();
-
-        if (topic == "trade") {
-            forQuoteData<Trade>(symbol, ExchangeT::ByBit, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
+        if (topic.find("publicTrade") != std::string::npos) {
+            const auto &dataObj = jsonMsg["data"][0];
+            const auto &symbol = dataObj["s"].get<std::string>();
+            forQuoteData<Trade>(symbol, ExchangeT::ByBit, jsonMsg, [this, &symbol, &dataObj](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::Trade;
                 updateHeader(quote, json, symbol);
-                updateTrade(quote, json);
+                updateTrade(quote, dataObj);
                 logger_.debug("[Trade] {}", quote.dump());
             });
             return;
         }
 
-        if (topic == "depth") {
-            forQuoteData<MarketBook>(symbol, ExchangeT::ByBit, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
+        if (topic.find("orderbook") != std::string::npos) {
+            const auto &dataObj = jsonMsg["data"];
+            const auto symbol = [&topic]() -> std::string {
+                auto found = topic.find_last_of(".");
+                return topic.substr(found + 1);
+            }();
+            const auto isSnapshot = jsonMsg["type"].get<std::string>() == "snapshot";
+            forQuoteData<MarketBook>(symbol, ExchangeT::ByBit, jsonMsg, [this, &symbol, &dataObj, isSnapshot](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::MarketBook;
                 updateHeader(quote, json, symbol);
-                quote.clear();
-                updateBook(quote, json);
-                logger_.debug("[Book] {}", quote.dump());
+                updateBook(quote, dataObj, isSnapshot);
+                logger_.info("[Book] {}", quote.dump());
             });
             return;
         }
 
-        if (topic == "kline") {
-            forQuoteData<Kline>(symbol, ExchangeT::ByBit, jsonMsg, [this, symbol](const nlohmann::json &json, auto &quote) {
+        if (topic.find("kline") != std::string::npos) {
+            const auto &dataObjArr = jsonMsg["data"];
+            const auto symbol = [&topic]() -> std::string {
+                auto found = topic.find_last_of(".");
+                return topic.substr(found + 1);
+            }();
+            const auto &dataObj = jsonMsg["data"][0];
+            forQuoteData<Kline>(symbol, ExchangeT::ByBit, jsonMsg, [this, &symbol, &dataObj](const nlohmann::json &json, auto &quote) {
                 quote.header_.type_ = QuoteType::Kline;
                 updateHeader(quote, json, symbol);
-                updateKline(quote, json);
+                updateKline(quote, dataObj);
                 logger_.debug("[Kline] {}", quote.dump());
             });
             return;
@@ -121,7 +123,7 @@ public:
     nlohmann::json genPingMessage()
     {
         return {
-            {"ping", 1535975085152}};
+            {"op", "ping"}};
     }
 
     virtual bool enabled() override
@@ -137,41 +139,82 @@ private:
         quote.header_.market_ = MarketT::Spot;
         quote.header_.symbol_ = symbol;
         quote.header_.receivedTime_ = Util::Time::getTime();
-        quote.header_.sourceTime_ = json["data"].at("t").get<long long>();
+        quote.header_.sourceTime_ = json["ts"].get<long long>();
     }
 
     inline void updateTrade(Trade &quote, const nlohmann::json &json)
     {
-        quote.tradeId_ = json["data"]["v"].get<std::string>();
-        quote.tradeType_ = json["data"]["m"].get<bool>() ? TradeType::Buyer : TradeType::Seller;
-        quote.price_ = std::stod(json["data"]["p"].get<std::string>());
-        quote.qty_ = std::stod(json["data"]["q"].get<std::string>());
+        quote.tradeId_ = json["i"].get<std::string>();
+        quote.tradeType_ = json["S"].get<std::string>() == "Buy" ? TradeType::Buyer : TradeType::Seller;
+        quote.price_ = std::stod(json["p"].get<std::string>());
+        quote.qty_ = std::stod(json["v"].get<std::string>());
     }
 
-    inline void updateBook(MarketBook &quote, const nlohmann::json &json)
+    inline void updateBook(MarketBook &quote, const nlohmann::json &json, bool isSnapshot)
     {
-        const auto &bidArr = json["data"]["b"];
-        for (const auto &bid : bidArr) {
-            quote.pushBid(std::stod(bid[0].get<std::string>()), std::stod(bid[1].get<std::string>()));
+        if (isSnapshot) {
+            updateSnapshotBook(quote, json);
+        } else {
+            updateDeltaBook(quote, json);
+        }
+    }
+
+    inline void updateSnapshotBook(MarketBook &quote, const nlohmann::json &json)
+    {
+        quote.clear();
+        const auto &bidArr = json["b"];
+        for (const auto &order : bidArr) {
+            const auto price = std::stod(order[0].get<std::string>());
+            const auto qty = std::stod(order[1].get<std::string>());
+            
+            // Bybit's snapshot book guaranty bids array is in descending order
+            quote.pushBid(price, qty);
         }
 
-        const auto &askArr = json["data"]["a"];
+        const auto &askArr = json["a"];
+        for (const auto &order : askArr) {
+            const auto price = std::stod(order[0].get<std::string>());
+            const auto qty = std::stod(order[1].get<std::string>());
+
+            // Bybit's snapshot book guaranty bids array is in asscending order
+            quote.pushAsk(price, qty);
+        }
+    }
+
+    inline void updateDeltaBook(MarketBook &quote, const nlohmann::json &json)
+    {
+        const auto &bidArr = json["b"];
+        for (const auto &bid : bidArr) {
+            const auto price = std::stod(bid[0].get<std::string>());
+            const auto qty = std::stod(bid[1].get<std::string>());
+            if (qty == 0) {
+                quote.deleteBid(price);
+                continue;
+            }
+            quote.insertBid(price, qty);
+        }
+
+        const auto &askArr = json["a"];
         for (const auto &ask : askArr) {
-            quote.pushAsk(std::stod(ask[0].get<std::string>()), std::stod(ask[1].get<std::string>()));
+            const auto price = std::stod(ask[0].get<std::string>());
+            const auto qty = std::stod(ask[1].get<std::string>());
+            if (qty == 0) {
+                quote.deleteAsk(price);
+                continue;
+            }
+            quote.insertAsk(price, qty);
         }
     }
 
     inline void updateKline(Kline &quote, const nlohmann::json &json)
     {
-        quote.type_ = json["params"]["klineType"].get<std::string>();
-        quote.highest_ = std::stod(json["data"]["h"].get<std::string>());
-        quote.lowest_ = std::stod(json["data"]["l"].get<std::string>());
-        quote.closed_ = std::stod(json["data"]["c"].get<std::string>());
-        quote.opened_ = std::stod(json["data"]["o"].get<std::string>());
-        quote.volume_ = std::stod(json["data"]["v"].get<std::string>());
-        
-        // Not support
-        quote.turnover_ = -1.0;
+        quote.type_ = json["interval"].get<std::string>();
+        quote.highest_ = std::stod(json["high"].get<std::string>());
+        quote.lowest_ = std::stod(json["low"].get<std::string>());
+        quote.closed_ = std::stod(json["close"].get<std::string>());
+        quote.opened_ = std::stod(json["open"].get<std::string>());
+        quote.volume_ = std::stod(json["volume"].get<std::string>());
+        quote.turnover_ = std::stod(json["turnover"].get<std::string>());
     }
 
     nlohmann::json config_;
