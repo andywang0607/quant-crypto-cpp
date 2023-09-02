@@ -16,3 +16,6 @@
 [submodule "thirdparty/googletest"]
 	path = thirdparty/googletest
 	url = https://github.com/google/googletest.git
+[submodule "Strategy/CryptoStrategy"]
+	path = Strategy/CryptoStrategy
+	url = git@github.com:andywang0607/CryptoStrategy.git

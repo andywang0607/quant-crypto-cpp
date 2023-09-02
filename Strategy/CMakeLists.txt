@@ -8,3 +8,8 @@ endforeach(target)
 
 add_subdirectory(TestStrategy)
 add_subdirectory(test)
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CryptoStrategy")
+  message(STATUS "CryptoStrategy found")
+  add_subdirectory(CryptoStrategy)
+endif()
