@@ -17,7 +17,7 @@ if(Boost_FOUND)
   message(STATUS "Boost_VERSION = ${Boost_VERSION}")
   message(STATUS "Boost_LIB_VERSION = ${Boost_LIB_VERSION}")
 
-  target_link_libraries(Util-Websocket INTERFACE ${Boost_LIBRARY_DIRS})
+  target_link_libraries(Util-Websocket INTERFACE Boost::system)
 endif()
 
 find_package(OpenSSL REQUIRED)
