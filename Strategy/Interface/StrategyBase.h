@@ -25,21 +25,21 @@ public:
             if (!isSubscribeSymbol(exchange, book.header_)) {
                 return;
             }
-            onNewBook(exchange, book.header_.symbol_);
+            onNewBook(book);
         });
 
         subscribeNewTradeCB([this](const auto &exchange, const auto &trade) {
             if (!isSubscribeSymbol(exchange, trade.header_)) {
                 return;
             }
-            onNewTrade(exchange, trade.header_.symbol_);
+            onNewTrade(trade);
         });
 
         subscribeNewKlineCB([this](const auto &exchange, const auto &kline) {
             if (!isSubscribeSymbol(exchange, kline.header_)) {
                 return;
             }
-            onNewKline(exchange, kline.header_.symbol_);
+            onNewKline(kline);
         });
     }
 

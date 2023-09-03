@@ -29,19 +29,19 @@ public:
         spdlog::info("TestStrategy stop");
     }
 
-    virtual void onNewBook(const Quote::ExchangeT &exchange, const std::string &symbol) override
+    virtual void onNewBook(const Quote::MarketBook &book) override
     {
-        spdlog::info("TestStrategy onNewBook, exchange={}, symbol={}", exchange, symbol);
+        spdlog::info("TestStrategy onNewBook, exchange={}, symbol={}", book.header_.source_, book.header_.symbol_);
     }
 
-    virtual void onNewTrade(const Quote::ExchangeT &exchange, const std::string &symbol) override
+    virtual void onNewTrade(const Quote::Trade &trade) override
     {
-        spdlog::info("TestStrategy onNewTrade, exchange={}, symbol={}", exchange, symbol);
+        spdlog::info("TestStrategy onNewTrade, exchange={}, symbol={}", trade.header_.source_, trade.header_.symbol_);
     }
 
-    virtual void onNewKline(const Quote::ExchangeT &exchange, const std::string &symbol) override
+    virtual void onNewKline(const Quote::Kline &kline) override
     {
-        spdlog::info("TestStrategy onNewKline, exchange={}, symbol={}", exchange, symbol);
+        spdlog::info("TestStrategy onNewKline, exchange={}, symbol={}", kline.header_.source_, kline.header_.symbol_);
     }
 };
 }
