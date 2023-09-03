@@ -3,6 +3,7 @@
 
 #include "QuoteApi.hpp"
 #include "StrategyInterface.h"
+#include "BaseNodeLoader.hpp"
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -10,10 +11,11 @@
 
 namespace QuantCrypto::Strategy {
 
-class StrategyBase : public StrategyInterface
+class StrategyBase : public StrategyInterface, public Util::DynamicLoader::BaseNode
 {
 public:
     StrategyBase(const nlohmann::json &config)
+        : Util::DynamicLoader::BaseNode(config)
     {
         // subscribe symbol format: $EXCHANGE@$SYMBOL
         auto &subscribeSymbolArr = config["subscribeSymbol"];

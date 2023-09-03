@@ -2,7 +2,7 @@
 
 using namespace QuantCrypto::Strategy;
 
-extern "C" StrategyBase *constructor(const nlohmann::json &config)
+extern "C" Util::DynamicLoader::BaseNode *constructor(const nlohmann::json &config)
 {
     return new TestStrategy(config);
 }

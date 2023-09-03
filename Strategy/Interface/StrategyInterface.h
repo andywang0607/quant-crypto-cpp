@@ -8,8 +8,8 @@ namespace QuantCrypto::Strategy {
 class StrategyInterface
 {
 public:
-    virtual void start() = 0;
-    virtual void stop() = 0;
+    virtual void onStart() = 0;
+    virtual void onStop() = 0;
 
     virtual void onNewBook(const QuantCrypto::Quote::MarketBook &book) = 0;
     virtual void onNewTrade(const QuantCrypto::Quote::Trade &trade) = 0;

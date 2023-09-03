@@ -1,4 +1,4 @@
-set(targets Interface Loader)
+set(targets Interface)
 
 add_library(Strategy INTERFACE)
 foreach(target ${targets})

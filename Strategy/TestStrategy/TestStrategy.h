@@ -19,14 +19,14 @@ public:
     {
     }
 
-    virtual void start() override
+    virtual void onStart() override
     {
-        spdlog::info("TestStrategy start");
+        spdlog::info("TestStrategy onStart");
     }
 
-    virtual void stop() override
+    virtual void onStop() override
     {
-        spdlog::info("TestStrategy stop");
+        spdlog::info("TestStrategy onStop");
     }
 
     virtual void onNewBook(const Quote::MarketBook &book) override

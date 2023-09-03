@@ -1,30 +1,29 @@
-#ifndef __DYNAMICSTRATEGYLOADER_H__
-#define __DYNAMICSTRATEGYLOADER_H__
-
-#include "StrategyBase.h"
+#ifndef __DYNAMICLOADER_H__
+#define __DYNAMICLOADER_H__
 
 #include <dlfcn.h>
 #include <unistd.h>
 #include <string>
 
+#include "BaseNode.hpp"
 
-namespace QuantCrypto::Strategy {
+namespace Util::DynamicLoader {
 
 template <typename... ConstructorArgs>
-class DynamicStrategyLoader
+class DynamicLoader
 {
-    using ConstructorType = StrategyBase *(*)(ConstructorArgs...);
-    using DestructorType = void (*)(StrategyBase *object);
+    using ConstructorType = BaseNode *(*)(ConstructorArgs...);
+    using DestructorType = void (*)(BaseNode *object);
 
 public:
-    DynamicStrategyLoader(const std::string &soName, const std::string &constructorName, const std::string &destructorName)
+    DynamicLoader(const std::string &soName, const std::string &constructorName, const std::string &destructorName)
     {
         openLib(soName);
         constructor_ = (ConstructorType)findSymbol(constructorName);
         destructor_ = (DestructorType)findSymbol(destructorName);
     }
 
-    ~DynamicStrategyLoader()
+    ~DynamicLoader()
     {
         if (soHandle_) {
             dlclose(soHandle_);
@@ -32,12 +31,12 @@ public:
         }
     }
 
-    StrategyBase *newObject(ConstructorArgs... args)
+    BaseNode *newObject(ConstructorArgs... args)
     {
         return constructor_(args...);
     }
 
-    void deleteObject(StrategyBase *object)
+    void deleteObject(BaseNode *object)
     {
         destructor_(object);
     }
@@ -70,6 +69,7 @@ private:
     void *soHandle_ = nullptr;
 };
 
-} // namespace QuantCrypto::Strategy
+}
 
-#endif // __DYNAMICSTRATEGYLOADER_H__
+
+#endif // __DYNAMICLOADER_H__

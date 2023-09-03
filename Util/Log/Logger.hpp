@@ -11,7 +11,7 @@ namespace Util::Log {
 class Logger
 {
 public:
-    Logger(const std::string &loggerName)
+    Logger(const std::string &loggerName = "MyLogger")
     {
         if (!dailySink) { // Can't construct multi logger in multi-thread
             dailySink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(LogFileName, 0, 0);

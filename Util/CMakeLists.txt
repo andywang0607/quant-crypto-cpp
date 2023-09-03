@@ -1,4 +1,4 @@
-set(targets Websocket Time Sign Event Log Thread StringUtil Querier Requester Resource)
+set(targets Websocket Time Sign Event Log Thread StringUtil Querier Requester Resource DynamicLoader)
 
 add_library(Util INTERFACE)
 foreach(target ${targets})

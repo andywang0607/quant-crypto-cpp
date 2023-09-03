@@ -2,7 +2,7 @@ add_executable(StrategyTest
   main.cpp
 )
 
-target_link_libraries(StrategyTest PRIVATE TestStrategy Strategy-Loader BybitQuote spdlog)
+target_link_libraries(StrategyTest PRIVATE TestStrategy Util-DynamicLoader BybitQuote spdlog)
 
 install(
   TARGETS BybitTest
