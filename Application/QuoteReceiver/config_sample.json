@@ -1,59 +1,76 @@
 {
-    "exchange": {
-        "bybit": {
-            "spot": {
-                "enabled": true,
-                "symbol": [
-                    "ETHUSDT",
-                    "BTCUSDT",
-                    "MATICUSDT",
-                    "AVAXUSDT"
-                ],
-                "klineType": [
-                    "1m"
-                ]
-            },
-            "contract": {
-                "enabled": true,
-                "symbol": [
-                    "ETHUSDT",
-                    "BTCUSDT",
-                    "MATICUSDT",
-                    "AVAXUSDT"
-                ],
-                "klineType": [
-                    "1"
-                ]
-            }
+    "nodes": [
+        {
+            "soName": "libQuoteReceiver.so",
+            "constructor": "constructor",
+            "destructor": "destructor",
+            "tradeRoot": "/home/awang/workspace/github/quant-crypto/history_quote/",
+            "bookRoot": "/home/awang/workspace/github/quant-crypto/history_quote/",
+            "klineRoot": "/home/awang/workspace/github/quant-crypto/history_quote/"
         },
-        "binance": {
-            "spot": {
-                "enabled": true,
-                "symbol": [
-                    "ETHUSDT",
-                    "BTCUSDT",
-                    "MATICUSDT",
-                    "AVAXUSDT"
-                ],
-                "klineType": [
-                    "1m"
-                ]
-            },
-            "contract": {
-                "enabled": true,
-                "symbol": [
-                    "ETHUSDT",
-                    "BTCUSDT",
-                    "MATICUSDT",
-                    "AVAXUSDT"
-                ],
-                "klineType": [
-                    "1m"
-                ]
-            }
+        {
+            "soName": "libBybitQuote.so",
+            "constructor": "constructor",
+            "destructor": "destructor",
+            "market": "spot",
+            "enabled": true,
+            "symbol": [
+                "ETHUSDT",
+                "BTCUSDT",
+                "MATICUSDT",
+                "AVAXUSDT"
+            ],
+            "klineType": [
+                "1m"
+            ]
+        },
+        {
+            "soName": "libBybitQuote.so",
+            "constructor": "constructor",
+            "destructor": "destructor",
+            "market": "contract",
+            "enabled": true,
+            "symbol": [
+                "ETHUSDT",
+                "BTCUSDT",
+                "MATICUSDT",
+                "AVAXUSDT"
+            ],
+            "klineType": [
+                "1m"
+            ]
+        },
+        {
+            "soName": "libBinanceQuote.so",
+            "constructor": "constructor",
+            "destructor": "destructor",
+            "market": "spot",
+            "enabled": true,
+            "symbol": [
+                "ETHUSDT",
+                "BTCUSDT",
+                "MATICUSDT",
+                "AVAXUSDT"
+            ],
+            "klineType": [
+                "1m"
+            ]
+        },
+        {
+            "soName": "libBinanceQuote.so",
+            "constructor": "constructor",
+            "destructor": "destructor",
+            "market": "contract",
+            "enabled": true,
+            "symbol": [
+                "ETHUSDT",
+                "BTCUSDT",
+                "MATICUSDT",
+                "AVAXUSDT"
+            ],
+            "klineType": [
+                "1m"
+            ]
         }
-    },
-    "QuoteReceiver": {
-        "root": "/mnt/d/crypto/history_quote/"
-    }
+    ]
 }

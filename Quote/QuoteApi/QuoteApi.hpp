@@ -13,6 +13,11 @@ public:
     static inline Util::Event::Topic<const ExchangeT &, Trade &> onNewTrade;
     static inline Util::Event::Topic<const ExchangeT &, Kline &> onNewKline;
     static inline Util::Event::Topic<const ExchangeT &, InstrumentInfo &> onNewInstrumentInfo;
+
+    static inline Util::Event::Topic<const std::string &, MarketBook &> onNewSymbolBook;
+    static inline Util::Event::Topic<const std::string &, Trade &> onNewSymbolTrade;
+    static inline Util::Event::Topic<const std::string &, Kline &> onNewSymbolKline;
+    static inline Util::Event::Topic<const std::string &, InstrumentInfo &> onNewSymbolInstrumentInfo;
 };
 }
 #endif // __QUOTEAPI_H__

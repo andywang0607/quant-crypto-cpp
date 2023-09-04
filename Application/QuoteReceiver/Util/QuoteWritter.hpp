@@ -15,8 +15,6 @@
 #include <type_traits>
 #include <unordered_map>
 
-#include <nlohmann/json.hpp>
-
 namespace QuantCrypto::QuoteReceiver::QuoteUtil {
 
 struct FileWriter
@@ -48,8 +46,8 @@ template <typename QuoteType>
 class QuoteWritter
 {
 public:
-    QuoteWritter(const nlohmann::json &config)
-        : root_(config["QuoteReceiver"]["root"].get<std::string>())
+    QuoteWritter(const std::string &root)
+        : root_(root)
         , logger_("QuoteWritter")
     {
     }

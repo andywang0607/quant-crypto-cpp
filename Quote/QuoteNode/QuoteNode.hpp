@@ -24,6 +24,7 @@ public:
             std::forward<F>(f)(msg, iter.first->second);
             if (iter.second) {
                 marketBook_.publish();
+                QuoteApi::onNewSymbolBook(symbol, iter.first->second);
             }
 
             QuoteApi::onNewBook(exchange, iter.first->second);
@@ -33,6 +34,7 @@ public:
             std::forward<F>(f)(msg, iter.first->second);
             if (iter.second) {
                 trade_.publish();
+                QuoteApi::onNewSymbolTrade(symbol, iter.first->second);
             }
             
             QuoteApi::onNewTrade(exchange, iter.first->second);
@@ -42,6 +44,7 @@ public:
             std::forward<F>(f)(msg, iter.first->second);
             if (iter.second) {
                 kline_.publish();
+                QuoteApi::onNewSymbolKline(symbol, iter.first->second);
             }
 
             QuoteApi::onNewKline(exchange, iter.first->second);
@@ -51,6 +54,7 @@ public:
             std::forward<F>(f)(msg, iter.first->second);
             if (iter.second) {
                 instrumentInfo_.publish();
+                QuoteApi::onNewSymbolInstrumentInfo(symbol, iter.first->second);
             }
 
             QuoteApi::onNewInstrumentInfo(exchange, iter.first->second);

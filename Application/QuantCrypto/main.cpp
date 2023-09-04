@@ -27,6 +27,7 @@ int main(int argc, const char **argv)
 
     const auto &nodeArray = config["nodes"];
     std::vector<BaseNodeLoader> loaders;
+    loaders.reserve(nodeArray.size());
     for (const auto &node : nodeArray) {
         loaders.emplace_back(node);
     }
