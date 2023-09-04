@@ -10,16 +10,15 @@ using namespace QuantCrypto::Quote;
 int main()
 {
     nlohmann::json config;
-
-    nlohmann::json bybitConfig;
-    bybitConfig["enabled"] = true;
-    bybitConfig["symbol"].push_back("BTCUSDT");
-    bybitConfig["symbol"].push_back("ETHUSDT");
-    bybitConfig["klineType"] = nlohmann::json::array({"1m", "1h"});
-    config["exchange"]["binance"]["spot"] = bybitConfig;
-    config["exchange"]["binance"]["contract"] = bybitConfig;
+    config["enabled"] = true;
+    config["symbol"].push_back("BTCUSDT");
+    config["symbol"].push_back("ETHUSDT");
+    config["klineType"] = nlohmann::json::array({"1m", "1h"});
+    config["market"] = "spot";
 
     BinanceSpotQuoteAdapter binanceSpot(config);
+
+    config["market"] = "contract";
     BinanceContractQuoteAdapter binanceContract(config);
 
     while (true) {

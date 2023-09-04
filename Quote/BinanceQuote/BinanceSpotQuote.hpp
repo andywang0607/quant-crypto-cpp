@@ -22,7 +22,7 @@ public:
     static inline const std::string Uri = "wss://stream.binance.com:443/ws";
 
     explicit BinanceSpotQuoteHandler(const nlohmann::json &config)
-        : config_(config["exchange"]["binance"]["spot"])
+        : config_(config)
         , logger_("BinanceSpotQuote")
     {
     }

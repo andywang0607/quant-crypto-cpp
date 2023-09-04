@@ -2,6 +2,7 @@
 #define __QUOTEADAPTER_H__
 
 #include "WebSocketReceiver.hpp"
+#include "BaseNode.hpp"
 #include <utility>
 
 #include <nlohmann/json.hpp>
@@ -9,11 +10,12 @@
 namespace QuantCrypto::Quote {
 
 template <typename QuoteHandlerType>
-class QuoteAdapter : public Util::Websocket::WebSocketReceiver<QuoteHandlerType>
+class QuoteAdapter : public Util::DynamicLoader::BaseNode, public Util::Websocket::WebSocketReceiver<QuoteHandlerType>
 {
 public:
     explicit QuoteAdapter(const nlohmann::json &config)
-        : Util::Websocket::WebSocketReceiver<QuoteHandlerType>(config)
+        : Util::DynamicLoader::BaseNode(config)
+        , Util::Websocket::WebSocketReceiver<QuoteHandlerType>(config)
     {
     }
 

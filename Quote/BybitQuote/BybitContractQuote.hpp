@@ -15,7 +15,7 @@ public:
     static inline const std::string Uri = "wss://stream.bybit.com/v5/public/linear";
 
     explicit BybitContractQuoteHandler(const nlohmann::json &config)
-        : BybitV5QuoteHandler(config["exchange"]["bybit"]["contract"])
+        : BybitV5QuoteHandler(config)
     {
     }
 
